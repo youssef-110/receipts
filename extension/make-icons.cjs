@@ -21,26 +21,19 @@ const chunk = (type, data) => {
 };
 
 // Unit-square coordinates (0..1). Returns [r,g,b,a]. Same mark as src/app/icon.svg (32-unit grid):
-// white receipt with a torn bottom edge on an accent tile, verified tick cut out in the accent colour.
-const ACCENT = [52, 69, 194, 255], PAPER = [255, 255, 255, 255];
-const TICK = [[10.5, 15.25], [14.25, 19], [21.5, 11.5]];
-const segDist = (px, py, [ax, ay], [bx, by]) => {
-  const dx = bx - ax, dy = by - ay;
-  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-};
+// white receipt slip with a torn bottom edge and one ruled line, on a near-black tile.
+const INK = [11, 11, 12, 255], PAPER = [255, 255, 255, 255];
 function pixel(x, y) {
   const r = 0.22, cx = Math.min(Math.max(x, r), 1 - r), cy = Math.min(Math.max(y, r), 1 - r);
   if ((x - cx) ** 2 + (y - cy) ** 2 > r * r) return [0, 0, 0, 0]; // rounded-square tile
-  // Receipt sits on a 32-unit grid scaled to 78% of the tile, centred.
-  const u = (x - 0.11) / 0.78 * 32, v = (y - 0.11) / 0.78 * 32;
-  if (u < 5 || u > 27 || v < 3) return ACCENT;
-  // top corners, radius 3
-  for (const ccx of [8, 24]) if (v < 6 && (ccx === 8 ? u < 8 : u > 24) && Math.hypot(u - ccx, v - 6) > 3) return ACCENT;
-  // torn bottom: 3 teeth between y 26.25 and 28.5
-  const f = ((u - 5) / 22) * 3, t = Math.abs((f - Math.floor(f)) * 2 - 1);
-  if (v > 26.25 + 2.25 * t) return ACCENT;
-  if (segDist(u, v, TICK[0], TICK[1]) < 1.5 || segDist(u, v, TICK[1], TICK[2]) < 1.5) return ACCENT;
+  // Slip on a 32-unit grid scaled to 80% of the tile, centred.
+  const u = (x - 0.1) / 0.8 * 32, v = (y - 0.1) / 0.8 * 32;
+  if (u < 7 || u > 25 || v < 3) return INK;
+  for (const ccx of [9.5, 22.5]) if (v < 5.5 && (ccx < 16 ? u < ccx : u > ccx) && Math.hypot(u - ccx, v - 5.5) > 2.5) return INK;
+  // torn bottom: 3 teeth between y 26.5 and 29
+  const f = ((u - 7) / 18) * 3, t = Math.abs((f - Math.floor(f)) * 2 - 1);
+  if (v > 26.5 + 2.5 * t) return INK;
+  if (Math.abs(v - 19.5) < 1.125 && u > 11.5 - 1.125 && u < 20.5 + 1.125) return INK; // ruled line
   return PAPER;
 }
 

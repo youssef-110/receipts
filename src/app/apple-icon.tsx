@@ -7,8 +7,8 @@ export const contentType = "image/png";
 export default function AppleIcon() {
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#3445c2" }}>
-        <StaticMark size={112} fill="#ffffff" cut="#3445c2" />
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#ffffff" }}>
+        <StaticMark size={120} fill="#0b0b0c" cut="#ffffff" />
       </div>
     ),
     size,

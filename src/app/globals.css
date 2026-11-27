@@ -17,42 +17,30 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* Warm neutrals, one accent (ink blue). Verdict colours are the only other hues. */
+/* White paper, black ink. The UI is monochrome so the verdict is the only colour on the page. */
 :root {
-  --desk: #f7f6f2;
+  --desk: #ffffff;
   --paper: #ffffff;
-  --sunk: #f0eee8;
-  --ink: #1c1b18;
-  --muted: #67655e;
-  --line: #e4e1d9;
-  --accent: #3445c2;
-  --trust: #1d7547;
-  --caution: #955800;
-  --avoid: #b5362b;
-  --unsure: #65635c;
+  --sunk: #f5f5f6;
+  --ink: #0b0b0c;
+  --muted: #6b6b70;
+  --line: #e8e8eb;
+  --accent: #0b0b0c;
+  --trust: #0e7a45;
+  --caution: #9e5a00;
+  --avoid: #c0281d;
+  --unsure: #6b6b70;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --desk: #141412;
-    --paper: #1c1c19;
-    --sunk: #24231f;
-    --ink: #edebe5;
-    --muted: #a3a097;
-    --line: #302e2a;
-    --accent: #9eabff;
-    --trust: #5fc490;
-    --caution: #e6a54b;
-    --avoid: #f2796b;
-    --unsure: #aaa79e;
-    color-scheme: dark;
-  }
+html {
+  scrollbar-color: var(--line) transparent;
 }
 
 body {
   background: var(--desk);
+  caret-color: var(--ink);
   color: var(--ink);
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv11";
@@ -61,7 +49,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 22%, transparent);
+  background: color-mix(in oklab, var(--ink) 14%, transparent);
 }
 
 /* In the base layer so element utilities (rounded-*, outline-none) still win. */
