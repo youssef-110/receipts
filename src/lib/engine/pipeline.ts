@@ -7,7 +7,7 @@ import { fetchSite } from "../collectors/site";
 import { config } from "../config";
 import { detectMode } from "../mode";
 import { withLedger } from "../net/ledger";
-import type { Evidence, Mode, ProgressEvent, RunCtx, Verdict } from "../types";
+import type { Evidence, LlmCall, Mode, ProgressEvent, RunCtx, Verdict } from "../types";
 import { decide, type DecideResult } from "./decide";
 import { computePrior, detectConflicts } from "./rubric";
 import { validate } from "./validate";
@@ -26,10 +26,17 @@ function dedupeSorted(items: Evidence[]): Evidence[] {
 export async function runCheck(
   input: string,
   opts: RunOpts = {},
-  emit: (e: ProgressEvent) => void = () => {},
+  report: (e: ProgressEvent) => void = () => {},
 ): Promise<Verdict> {
   const startedAt = Date.now();
   const runId = randomUUID().slice(0, 8);
+  const secs = () => `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+  // Every LLM call (collector extract/vision, decide/skeptic/judge, failed attempts) ends up in verdict.llm.
+  const calls: LlmCall[] = [];
+  const emit = (e: ProgressEvent) => {
+    if (e.type === "llm") calls.push(e.call);
+    report(e);
+  };
 
   return withLedger(async () => {
     emit({ type: "stage", stage: "site", msg: `Fetching ${input}` });
@@ -45,7 +52,7 @@ export async function runCheck(
     const prior = computePrior(evidence);
     const ruleConflicts = detectConflicts(evidence, site);
 
-    emit({ type: "stage", stage: "decide", msg: `${evidence.length} evidence items, prior ${prior.band} (${prior.score})` });
+    emit({ type: "stage", stage: "decide", msg: `${evidence.length} evidence items at ${secs()}, prior ${prior.band} (${prior.score})` });
     let draft: DecideResult;
     try {
       draft = await decide(ctx, evidence, prior, ruleConflicts, { fresh: opts.fresh });
@@ -64,8 +71,17 @@ export async function runCheck(
       };
     }
 
-    emit({ type: "stage", stage: "validate" });
+    emit({ type: "stage", stage: "validate", msg: `AI done at ${secs()}` });
     const checked = validate(draft, evidence, prior);
+    const seen = new Set<string>();
+    const llm = [...calls, ...checked.draft.llm]
+      .filter((c) => {
+        const k = `${c.started_at}|${c.role}|${c.model}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .sort((a, b) => a.started_at.localeCompare(b.started_at));
 
     const verdict: Verdict = {
       input,
@@ -81,13 +97,13 @@ export async function runCheck(
       guards: checked.guards,
       dropped_reasons: checked.dropped_reasons,
       evidence,
-      llm: checked.draft.llm,
+      llm,
       run: {
         id: runId,
         started_at: new Date(startedAt).toISOString(),
         duration_ms: Date.now() - startedAt,
         version: config.version,
-        cache_hits: checked.draft.llm.filter((c) => c.cached).length,
+        cache_hits: llm.filter((c) => c.cached).length,
       },
     };
     emit({ type: "verdict", verdict });
