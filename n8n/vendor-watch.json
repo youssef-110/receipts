@@ -56,7 +56,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Remember last week's verdict per vendor; pass on only what changed.\n// First sighting of a non-Trust verdict also alerts (useful for the demo).\nconst store = $getWorkflowStaticData('global');\nstore.last = store.last || {};\nconst changes = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const prev = store.last[v.input];\n  const changed = prev ? prev !== v.verdict : v.verdict !== 'Trust';\n  if (changed) {\n    const top = (v.reasons || []).slice(0, 2).map((r) => '• ' + r.text).join('\\n');\n    changes.push({ json: { url: v.input, from: prev || 'new', to: v.verdict, summary: v.summary, top } });\n  }\n  store.last[v.input] = v.verdict;\n}\nreturn changes;"
+        "jsCode": "// Remember last week's verdict per vendor; pass on only what changed.\n// First sighting of a non-Trust verdict also alerts (useful for the demo).\n// Strip links, mentions and markdown from model/page-derived text before it goes to Discord.\nconst clean = (s) => String(s || '').replace(/https?:\\/\\/\\S+/g, '[link]').replace(/[@*_~`|>\\[\\]()#]/g, '').slice(0, 300);\nconst store = $getWorkflowStaticData('global');\nstore.last = store.last || {};\nconst changes = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const prev = store.last[v.input];\n  const changed = prev ? prev !== v.verdict : v.verdict !== 'Trust';\n  if (changed) {\n    const top = (v.reasons || []).slice(0, 2).map((r) => '• ' + clean(r.text)).join('\\n');\n    changes.push({ json: { url: clean(v.input), from: prev || 'new', to: v.verdict, summary: clean(v.summary), top } });\n  }\n  store.last[v.input] = v.verdict;\n}\nreturn changes;"
       },
       "id": "a1f0c7e2-0005-4c1a-9a01-000000000005",
       "name": "Compare with last week",
@@ -70,7 +70,7 @@
         "url": "https://discord.com/api/webhooks/REPLACE/ME",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ content: `🧾 Receipts vendor watch: **${$json.url}** changed ${$json.from} → **${$json.to}**\\n${$json.summary}\\n${$json.top}` }) }}",
+        "jsonBody": "={{ JSON.stringify({ content: `🧾 Receipts vendor watch: **${$json.url}** changed ${$json.from} → **${$json.to}**\\n${$json.summary}\\n${$json.top}`, allowed_mentions: { parse: [] } }) }}",
         "options": {}
       },
       "id": "a1f0c7e2-0006-4c1a-9a01-000000000006",
