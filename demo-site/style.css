@@ -1,0 +1,33 @@
+:root{--bg:#07090f;--fg:#e8ecf5;--mut:#8e98ad;--card:#0f1422;--line:#1d2540;--a:#6c8cff;--b:#b46cff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(900px 500px at 70% -10%,#1a2350 0,transparent 60%),var(--bg);color:var(--fg);font:16px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:inherit;text-decoration:none}.w{max-width:1120px;margin:0 auto;padding:0 20px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.02em}.logo i{font-style:normal;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;color:transparent}
+nav .l a{margin-left:24px;color:var(--mut);font-size:15px}nav .l a:hover{color:var(--fg)}nav .l a.btn{color:#fff}
+.btn{display:inline-block;padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,var(--a),var(--b));color:#fff;font-weight:600;border:0}
+.btn.o{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.hero{text-align:center;padding:80px 0 56px}
+.pill{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:99px;color:var(--mut);font-size:13px;margin-bottom:22px}
+h1{font-size:clamp(36px,6vw,68px);line-height:1.05;letter-spacing:-.03em;margin:0 0 20px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;color:transparent}
+.sub{max-width:640px;margin:0 auto 30px;color:var(--mut);font-size:19px}
+.stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:48px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 28px}
+.stats b{display:block;font-size:28px}.stats span{color:var(--mut);font-size:14px}
+.trust{padding:40px 0;text-align:center;color:var(--mut)}
+.logos{display:flex;gap:36px;justify-content:center;flex-wrap:wrap;margin-top:18px;font-weight:700;font-size:19px;color:#5d6785;letter-spacing:.02em}
+section{padding:64px 0}h2{font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;margin:0 0 12px;text-align:center}
+.lead{text-align:center;color:var(--mut);max-width:620px;margin:0 auto 40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px}
+.card h3{margin:0 0 8px;font-size:18px}.card p{margin:0;color:var(--mut);font-size:15px}
+.ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));margin-bottom:16px}
+.price .big{font-size:40px;font-weight:800}.price ul{padding-left:18px;color:var(--mut)}
+.price .hot{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 20px 60px -20px #6c8cff55}
+.q small{display:block;margin-top:14px;color:var(--mut)}
+footer{border-top:1px solid var(--line);padding:36px 0;color:var(--mut);font-size:14px}
+footer .row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+footer .demo{margin-top:18px;font-size:12px;color:#6b7590}
+.page{padding:50px 0 80px}.page h1{font-size:40px}
+@media(max-width:600px){nav .l a:not(.btn){display:none}.hero{padding-top:48px}}
