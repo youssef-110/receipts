@@ -101,9 +101,17 @@ export const waybackCollector: Collector = {
         return false;
       }
     };
-    const year = await firstBrandYear(years, hasBrand);
-    if (year === null) return out;
+    const found = await firstBrandYear(years, hasBrand);
+    if (found === null) return out;
+    // Only claim a year whose snapshot we actually fetched and saw the brand in (the search may stop
+    // narrowing once its fetch budget is spent); otherwise fall back to the earliest confirmed year.
+    const year =
+      seenAt.get(found) === true
+        ? found
+        : [...seenAt].filter(([y, ok]) => ok && y >= found).map(([y]) => y).sort((a, b) => a - b)[0];
+    if (year === undefined) return out;
     const snapUrl = `https://web.archive.org/web/${snaps.get(year)}/${d}`;
+    ledger.alias(snapUrl, `https://web.archive.org/web/${snaps.get(year)}id_/http://${d}/`);
     const age2 = new Date().getUTCFullYear() - year;
     out.push({
       id: "wayback:brand-first-seen",
