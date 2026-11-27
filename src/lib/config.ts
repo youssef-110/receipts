@@ -11,8 +11,12 @@ export const config = {
   tavilyKey: env("TAVILY_API_KEY"),
   watchKey: env("WATCH_KEY"),
   models: {
-    decide: env("MODEL_DECIDE", "deepseek-ai/DeepSeek-V4-Pro-0813"),
-    decideFallback: env("MODEL_DECIDE_FALLBACK", "deepseek-ai/DeepSeek-V4.1-Flash-1017-fast"),
+    // Live-tested 2026-11-27: gpt-oss decide ~2s, DeepSeek-V4-Pro ~40s on 17 items (so it only judges contested cases),
+    // DeepSeek-V4.1-Flash breaks JSON mode on real case files.
+    decide: env("MODEL_DECIDE", "openai/gpt-oss-120b"),
+    decideFallback: env("MODEL_DECIDE_FALLBACK", "deepseek-ai/DeepSeek-V4-Pro-0813"),
+    judge: env("MODEL_JUDGE", "deepseek-ai/DeepSeek-V4-Pro-0813"),
+    judgeFallback: env("MODEL_JUDGE_FALLBACK", "openai/gpt-oss-120b"),
     skeptic: env("MODEL_SKEPTIC", "zai-org/GLM-5.3"),
     skepticFallback: env("MODEL_SKEPTIC_FALLBACK", "openai/gpt-oss-120b"),
     extract: env("MODEL_EXTRACT", "Qwen/Qwen3-30B-A3B-Instruct-2507"),
