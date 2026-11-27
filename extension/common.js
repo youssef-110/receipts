@@ -1,5 +1,5 @@
-// Shared by popup, options and (via importScripts) the service worker.
-const DEFAULT_APP_URL = "https://receipts.vercel.app";
+﻿// Shared by popup, options and (via importScripts) the service worker.
+const DEFAULT_APP_URL = "https://receipts-hex8.vercel.app";
 
 async function getAppUrl() {
   try {

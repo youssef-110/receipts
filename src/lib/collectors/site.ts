@@ -352,6 +352,29 @@ export const siteClaimsCollector: Collector = {
           data: { checked: res.length, dead: 0 },
         });
       }
+      // A help center that exists but has nothing in it ("articles coming soon") is a hollow-vendor tell.
+      const live = res.find((r) => r.status > 0 && r.status < 400);
+      if (live) {
+        try {
+          const page = await politeFetch(live.l.href, { target: true, timeoutMs: 8000 });
+          const root = parse(page.text);
+          root.querySelectorAll("script,style,noscript,svg,nav,header,footer").forEach((n) => n.remove());
+          const words = root.text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
+          const placeholder = /coming soon|no articles|under construction|nothing here yet|bald verfügbar|in kürze/i.test(root.text);
+          if (page.ok && (words < 80 || placeholder)) {
+            add({
+              id: "site:thin-help",
+              claim: `The linked help/docs page has almost no content (${words} words${placeholder ? ", placeholder text" : ""}).`,
+              url: page.finalUrl,
+              polarity: "undermines",
+              strength: 2,
+              data: { words, placeholder },
+            });
+          }
+        } catch {
+          // fetch failure here is not evidence either way
+        }
+      }
     }
     return out;
   },
