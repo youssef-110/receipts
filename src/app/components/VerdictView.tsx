@@ -13,12 +13,47 @@ const MODE_QUESTION: Record<Mode, string> = {
   marketplace: "Is this listing real?",
 };
 
-const VERDICT_STYLE: Record<VerdictLabel, { text: string; bg: string; note: string }> = {
-  Trust: { text: "text-trust", bg: "bg-trust", note: "The history checks out." },
-  Caution: { text: "text-caution", bg: "bg-caution", note: "Proceed, but check the points below." },
-  Avoid: { text: "text-avoid", bg: "bg-avoid", note: "The evidence points against this site." },
-  Unsure: { text: "text-unsure", bg: "bg-unsure", note: "Not enough proof either way." },
+const VERDICT_STYLE: Record<VerdictLabel, { text: string; bg: string; tint: string; note: string; glyph: string }> = {
+  Trust: { text: "text-trust", bg: "bg-trust", tint: "bg-trust/6 ring-trust/15", note: "The history checks out.", glyph: "M7 12.5l3.5 3.5L17 9" },
+  Caution: { text: "text-caution", bg: "bg-caution", tint: "bg-caution/7 ring-caution/20", note: "Proceed, but check the points below.", glyph: "M12 7.5v5.5M12 16.5v.01" },
+  Avoid: { text: "text-avoid", bg: "bg-avoid", tint: "bg-avoid/6 ring-avoid/15", note: "The evidence points against this site.", glyph: "M8.5 8.5l7 7M15.5 8.5l-7 7" },
+  Unsure: { text: "text-unsure", bg: "bg-unsure", tint: "bg-sunk ring-line", note: "Not enough proof either way.", glyph: "M9.75 9.5a2.25 2.25 0 1 1 3.1 2.08c-.5.22-.85.7-.85 1.25v.42M12 16.5v.01" },
 };
+
+/** Tinted card for one group of reasons. Colour carries the meaning; the heading says it in words too. */
+const TONE = {
+  trust: { box: "bg-trust/5 ring-trust/15", head: "text-trust", dot: "bg-trust", div: "divide-trust/12", glyph: "M7 12.5l3.5 3.5L17 9" },
+  avoid: { box: "bg-avoid/5 ring-avoid/15", head: "text-avoid", dot: "bg-avoid", div: "divide-avoid/12", glyph: "M8.5 8.5l7 7M15.5 8.5l-7 7" },
+  caution: { box: "bg-caution/6 ring-caution/20", head: "text-caution", dot: "bg-caution", div: "divide-caution/15", glyph: "M12 7.5v5.5M12 16.5v.01" },
+} as const;
+
+function Glyph({ d, className }: { d: string; className: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-full text-paper ${className}`} aria-hidden>
+      <svg viewBox="0 0 24 24" className="size-[70%]">
+        <path d={d} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+function SignCard({ tone, title, reasons, byId }: { tone: keyof typeof TONE; title: string; reasons: Reason[]; byId: Map<string, Evidence> }) {
+  const t = TONE[tone];
+  return (
+    <div className={`rounded-xl px-4 pt-4 ring-1 ring-inset ${t.box}`}>
+      <h3 className={`flex items-center gap-2 text-sm font-semibold ${t.head}`}>
+        <Glyph d={t.glyph} className={`size-5 ${t.dot}`} />
+        {title}
+        <span className="ml-auto font-mono text-xs tabular-nums opacity-70">{reasons.length}</span>
+      </h3>
+      <ul className={`divide-y ${t.div}`}>
+        {reasons.map((r, i) => (
+          <ReasonItem key={i} r={r} byId={byId} />
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 /** What to do, in plain words. This is the line most people read. */
 const ADVICE: Record<VerdictLabel, Record<Mode, string>> = {
@@ -71,7 +106,7 @@ export function safeUrl(u: string | undefined): string | undefined {
 export function TierBadge({ tier }: { tier: Tier }) {
   const t = TIER_BY_ID[tier];
   return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted">
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-paper px-2 py-0.5 text-[11px] text-muted ring-1 ring-inset ring-line">
       <span className={`size-1.5 rounded-full ${t.dot}`} aria-hidden />
       {t.label}
     </span>
@@ -291,24 +326,27 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
             {v.input.replace(/^https?:\/\/(www\.)?/, "")}
           </h2>
 
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className={`mt-6 flex flex-col gap-5 rounded-2xl p-5 ring-1 ring-inset sm:flex-row sm:items-end sm:justify-between sm:p-7 ${style.tint}`}>
             <div>
-              <p
-                style={{ animationDelay: "120ms" }}
-                className={`reveal font-serif text-[3.5rem] font-medium leading-[0.9] tracking-[-0.03em] sm:text-[4.5rem] ${style.text}`}
-                aria-label={`Verdict: ${v.verdict}`}
-              >
-                {v.verdict}
-              </p>
+              <div className="flex items-center gap-3.5">
+                <Glyph d={style.glyph} className={`pop size-10 sm:size-12 ${style.bg}`} />
+                <p
+                  style={{ animationDelay: "120ms" }}
+                  className={`reveal font-serif text-[3.25rem] font-medium leading-[0.9] tracking-[-0.03em] sm:text-[4.25rem] ${style.text}`}
+                  aria-label={`Verdict: ${v.verdict}`}
+                >
+                  {v.verdict}
+                </p>
+              </div>
               <p className="mt-4 max-w-[34ch] text-lg font-medium leading-snug">{ADVICE[v.verdict]?.[v.mode] ?? style.note}</p>
             </div>
             <div className="w-full sm:w-56 sm:pb-1">
               <div className="flex items-baseline justify-between text-sm">
                 <span className="text-muted">{confidenceWord(pct)} confidence</span>
-                <span className="font-mono tabular-nums">{pct}%</span>
+                <span className={`font-mono font-medium tabular-nums ${style.text}`}>{pct}%</span>
               </div>
               <div
-                className="mt-2 h-1 overflow-hidden rounded-full bg-sunk"
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-paper"
                 role="meter"
                 aria-valuemin={0}
                 aria-valuemax={100}
@@ -322,61 +360,45 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
 
           <p className="mt-7 max-w-[62ch] text-pretty font-serif text-[1.2rem] leading-[1.6]">{v.summary}</p>
 
-          <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-            <span className="flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-trust" aria-hidden />
+          <div className="mt-5 flex flex-wrap gap-2 text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-trust/10 py-1 pl-1.5 pr-3 font-medium text-trust">
+              <Glyph d={TONE.trust.glyph} className="size-4 bg-trust" />
               {plural(forTrust.length, "good sign")}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-avoid" aria-hidden />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-avoid/10 py-1 pl-1.5 pr-3 font-medium text-avoid">
+              <Glyph d={TONE.avoid.glyph} className="size-4 bg-avoid" />
               {plural(against.length, "warning sign")}
             </span>
-            <span>{plural(v.evidence.length, "source")} checked</span>
-          </p>
+            <span className="inline-flex items-center rounded-full bg-sunk px-3 py-1 text-muted">{plural(v.evidence.length, "source")} checked</span>
+          </div>
 
           {blocked && <BlockedNotice e={blocked} verdict={v.verdict} />}
 
           {(forTrust.length > 0 || against.length > 0) && (
-            <div className="mt-7 grid gap-x-10 border-t border-line sm:grid-cols-2">
-              {forTrust.length > 0 && (
-                <div>
-                  <h3 className="flex items-center gap-2 pt-5 text-sm font-semibold">
-                    <span className="size-1.5 rounded-full bg-trust" aria-hidden />
-                    Good signs
-                  </h3>
-                  <ul className="divide-y divide-line">{forTrust.map((r, i) => <ReasonItem key={i} r={r} byId={byId} />)}</ul>
-                </div>
-              )}
-              {against.length > 0 && (
-                <div>
-                  <h3 className="flex items-center gap-2 pt-5 text-sm font-semibold">
-                    <span className="size-1.5 rounded-full bg-avoid" aria-hidden />
-                    Warning signs
-                  </h3>
-                  <ul className="divide-y divide-line">{against.map((r, i) => <ReasonItem key={i} r={r} byId={byId} />)}</ul>
-                </div>
-              )}
+            <div className="mt-6 grid items-start gap-4 sm:grid-cols-2">
+              {forTrust.length > 0 && <SignCard tone="trust" title="Good signs" reasons={forTrust} byId={byId} />}
+              {against.length > 0 && <SignCard tone="avoid" title="Warning signs" reasons={against} byId={byId} />}
             </div>
           )}
 
           {v.conflicts.length > 0 && (
-            <div className="mt-6 rounded-xl bg-caution/10 px-4 pt-4">
-              <h3 className="text-sm font-semibold text-caution">Mixed signals</h3>
-              <ul className="divide-y divide-caution/15">
-                {v.conflicts.map((c, i) => (
-                  <ReasonItem key={i} r={{ text: c.text, evidence_ids: c.evidence_ids, stance: "against_trust" }} byId={byId} />
-                ))}
-              </ul>
+            <div className="mt-4">
+              <SignCard
+                tone="caution"
+                title="Mixed signals"
+                reasons={v.conflicts.map((c) => ({ text: c.text, evidence_ids: c.evidence_ids, stance: "against_trust" as const }))}
+                byId={byId}
+              />
             </div>
           )}
 
           {v.check_next.length > 0 && (
             <div className="mt-7">
               <h3 className="text-sm font-semibold">What you can do next</h3>
-              <ol className="mt-3 space-y-2">
+              <ol className="mt-3 space-y-2.5">
                 {v.check_next.map((c, i) => (
                   <li key={i} className="flex gap-3 leading-snug">
-                    <span className="w-4 shrink-0 pt-px text-right font-mono text-xs leading-5 text-muted">{i + 1}</span>
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-ink font-mono text-[11px] font-semibold text-paper">{i + 1}</span>
                     <span>{c}</span>
                   </li>
                 ))}
