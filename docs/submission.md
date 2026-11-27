@@ -20,7 +20,7 @@
 | Project name | Receipts |
 | One-liner | Websites are free to fake. History isn't. Paste a vendor, shop or marketplace URL and get a Trust / Caution / Avoid verdict where every reason links to a source we fetched. |
 | Track | Research Agents |
-| Demo URL | [DEMO URL] |
+| Demo URL | https://receipts-hex8.vercel.app |
 | GitHub | https://github.com/youssef-110/receipts |
 | Team | [TEAM MEMBER NAMES] |
 | Challenges entered | Stackgini, Nebius, Norma, n8n |
