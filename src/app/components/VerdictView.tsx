@@ -28,6 +28,17 @@ export const TIERS: { tier: Tier; label: string; hint: string; cls: string }[] =
 ];
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.tier, t])) as Record<Tier, (typeof TIERS)[number]>;
 
+/** Evidence URLs come from scraped pages and search results: only ever link or embed http(s), never javascript:/data:. */
+export function safeUrl(u: string | undefined): string | undefined {
+  if (!u) return undefined;
+  try {
+    const p = new URL(u);
+    return p.protocol === "https:" || p.protocol === "http:" ? p.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function TierBadge({ tier }: { tier: Tier }) {
   const t = TIER_BY_ID[tier];
   return <span className={`inline-flex shrink-0 rounded border px-1.5 py-px text-[11px] font-medium ${t.cls}`}>{t.label}</span>;
@@ -63,7 +74,7 @@ function ReceiptLink({ e }: { e: Evidence }) {
       </span>
       <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
         <a
-          href={e.url}
+          href={safeUrl(e.url)}
           target="_blank"
           rel="noopener noreferrer nofollow"
           className="break-words font-medium text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent"
@@ -109,7 +120,7 @@ function AdCompare({ items }: { items: Evidence[] }) {
                 {pics.map((pic) => (
                   <figure key={pic.label} className="min-w-0">
                     <img
-                      src={pic.src}
+                      src={safeUrl(pic.src)}
                       alt={`${pic.label}: ${e.claim}`}
                       loading="lazy"
                       referrerPolicy="no-referrer"
@@ -123,7 +134,7 @@ function AdCompare({ items }: { items: Evidence[] }) {
                 <p className={`mt-2 inline-flex rounded border px-2 py-0.5 text-sm font-semibold ${tone}`}>{result}</p>
                 <p className="mt-1.5 leading-snug">{e.claim}</p>
                 <a
-                  href={e.url}
+                  href={safeUrl(e.url)}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                   className="mt-1 inline-block text-sm text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent"
@@ -358,7 +369,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
                         <div className="min-w-0 flex-1">
                           <p className="leading-snug">{e.claim}</p>
                           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                            <a href={e.url} target="_blank" rel="noopener noreferrer nofollow" className="text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
+                            <a href={safeUrl(e.url)} target="_blank" rel="noopener noreferrer nofollow" className="text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
                               {e.source}
                             </a>
                             <span className="break-all">{host(e.url)}</span>
@@ -370,7 +381,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
                           </p>
                         </div>
                         {e.image && (
-                          <img src={e.image} alt={`Image compared for: ${e.claim}`} loading="lazy" referrerPolicy="no-referrer" className="size-16 shrink-0 rounded-md border border-line object-cover" />
+                          <img src={safeUrl(e.image)} alt={`Image compared for: ${e.claim}`} loading="lazy" referrerPolicy="no-referrer" className="size-16 shrink-0 rounded-md border border-line object-cover" />
                         )}
                       </li>
                     ))}
