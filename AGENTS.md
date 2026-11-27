@@ -30,3 +30,13 @@ Receipts: paste a URL (software vendor, online shop from an ad, or marketplace l
 | WP8 shop | `src/lib/collectors/shop/*`, `src/lib/llm/prompts/shop.ts` |
 | WP9 marketplace | `src/lib/collectors/marketplace/*`, `src/lib/llm/prompts/marketplace.ts` |
 | WP10 extension | `extension/*` |
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

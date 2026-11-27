@@ -1,0 +1,222 @@
+// Fictional sample used by `/?demo=1` to design and demo the UI without the engine. Not real data.
+
+import type { Evidence, Verdict } from "../../lib/types";
+
+const at = "2026-11-27T15:02:11.000Z";
+
+function ev(e: Omit<Evidence, "fetched_at" | "collector"> & { fetched_at?: string }): Evidence {
+  return { fetched_at: at, collector: e.id.split(":")[0], ...e };
+}
+
+const evidence: Evidence[] = [
+  ev({
+    id: "certs:first-cert",
+    claim: "The earliest TLS certificate for kontorflow.com in crt.sh was issued on 2018-02-09.",
+    url: "https://crt.sh/?q=kontorflow.com",
+    tier: "time",
+    polarity: "supports",
+    strength: 2,
+    source: "crt.sh certificate log",
+    verified: true,
+    data: { first_cert: "2018-02-09" },
+  }),
+  ev({
+    id: "dns:mx",
+    claim: "kontorflow.com has MX records that point to Google Workspace.",
+    url: "https://dns.google/resolve?name=kontorflow.com&type=MX",
+    tier: "time",
+    polarity: "supports",
+    strength: 1,
+    source: "Google Public DNS",
+    verified: true,
+  }),
+  ev({
+    id: "mentions:g2",
+    claim: "G2 lists 142 reviews for Kontorflow with an average rating of 4.4 out of 5.",
+    url: "https://www.g2.com/products/kontorflow/reviews",
+    tier: "third_party",
+    polarity: "supports",
+    strength: 2,
+    source: "Tavily -> g2.com",
+    verified: false,
+  }),
+  ev({
+    id: "mentions:techcrunch",
+    claim: "TechCrunch reported a Series A round for Kontorflow in March 2021.",
+    url: "https://techcrunch.com/2021/03/16/kontorflow-series-a/",
+    tier: "third_party",
+    polarity: "supports",
+    strength: 2,
+    source: "Tavily -> techcrunch.com",
+    verified: false,
+  }),
+  ev({
+    id: "rdap:created",
+    claim: "The domain kontorflow.com was registered on 2009-03-14.",
+    url: "https://rdap.org/domain/kontorflow.com",
+    tier: "time",
+    polarity: "supports",
+    strength: 3,
+    source: "RDAP via rdap.org",
+    verified: true,
+    data: { created: "2009-03-14", registrar: "DENIC member" },
+  }),
+  ev({
+    id: "registers:northdata",
+    claim: "Kontorflow GmbH is listed in the Munich commercial register under HRB 238471.",
+    url: "https://www.northdata.com/Kontorflow%20GmbH,%20M%C3%BCnchen",
+    tier: "third_party",
+    polarity: "supports",
+    strength: 3,
+    source: "North Data (Handelsregister)",
+    verified: true,
+  }),
+  ev({
+    id: "risk:lookalike",
+    claim: "The lookalike domain kontor-flow.com was registered on 2026-09-30 and serves a login form.",
+    url: "https://rdap.org/domain/kontor-flow.com",
+    tier: "red_flag",
+    polarity: "undermines",
+    strength: 2,
+    source: "RDAP via rdap.org",
+    verified: true,
+  }),
+  ev({
+    id: "site:founded",
+    claim: "The About page says the company was founded in 2017 in Munich.",
+    url: "https://kontorflow.com/about",
+    tier: "claimed",
+    polarity: "neutral",
+    strength: 1,
+    source: "kontorflow.com",
+    verified: true,
+  }),
+  ev({
+    id: "site:imprint",
+    claim: "The imprint names Kontorflow GmbH, a Munich address and register number HRB 238471.",
+    url: "https://kontorflow.com/impressum",
+    tier: "claimed",
+    polarity: "supports",
+    strength: 1,
+    source: "kontorflow.com",
+    verified: true,
+  }),
+  ev({
+    id: "site:soc2",
+    claim: "The security page says Kontorflow holds a SOC 2 Type II report.",
+    url: "https://kontorflow.com/security",
+    tier: "claimed",
+    polarity: "neutral",
+    strength: 1,
+    source: "kontorflow.com",
+    verified: true,
+  }),
+  ev({
+    id: "wayback:first",
+    claim: "The earliest Wayback Machine capture of kontorflow.com is from 2009-06-02.",
+    url: "https://web.archive.org/web/2009*/kontorflow.com",
+    tier: "time",
+    polarity: "supports",
+    strength: 3,
+    source: "Wayback Machine",
+    verified: true,
+  }),
+  ev({
+    id: "wayback:owner-change",
+    claim: "Captures before 2018 show a Danish furniture blog on kontorflow.com, not a software product.",
+    url: "https://web.archive.org/web/2016/https://kontorflow.com/",
+    tier: "time",
+    polarity: "neutral",
+    strength: 2,
+    source: "Wayback Machine",
+    verified: true,
+  }),
+];
+
+export const sampleVerdict: Verdict = {
+  input: "kontorflow.com",
+  mode: "vendor",
+  verdict: "Trust",
+  confidence: 0.74,
+  summary:
+    "Kontorflow is a registered German company with years of independent coverage and reviews. The domain is older than the brand, so its age says little; a new lookalike domain is the main thing to watch.",
+  reasons: [
+    {
+      text: "The company in the imprint is in the Munich commercial register with the same register number.",
+      evidence_ids: ["registers:northdata", "site:imprint"],
+      stance: "for_trust",
+    },
+    {
+      text: "Press coverage from 2021 and 142 G2 reviews describe the same product.",
+      evidence_ids: ["mentions:techcrunch", "mentions:g2"],
+      stance: "for_trust",
+    },
+    {
+      text: "The site has served this product since at least early 2018.",
+      evidence_ids: ["certs:first-cert", "wayback:owner-change"],
+      stance: "for_trust",
+    },
+    {
+      text: "A lookalike domain registered two months ago serves a login form.",
+      evidence_ids: ["risk:lookalike"],
+      stance: "against_trust",
+    },
+  ],
+  conflicts: [
+    {
+      text: "The domain dates from 2009, but the company says it was founded in 2017, and captures before 2018 show a different business. The domain was most likely bought, so domain age does not count for this brand.",
+      evidence_ids: ["rdap:created", "site:founded", "wayback:owner-change"],
+    },
+  ],
+  check_next: [
+    "Type kontorflow.com yourself instead of following links: kontor-flow.com is a lookalike.",
+    "Ask for the SOC 2 report under NDA: the claim is only on their own site.",
+  ],
+  skeptic: {
+    argued_for: "Caution",
+    argument:
+      "Most of the time evidence belongs to the previous owner of the domain. Strip that out and the history is eight years, with an active lookalike domain that could catch customers.",
+    strength: "moderate",
+    evidence_ids: ["rdap:created", "wayback:owner-change", "risk:lookalike"],
+  },
+  prior: { score: 24, band: "Trust" },
+  guards: [
+    "Domain age weight removed: the brand is younger than the domain.",
+    "Every reason cites at least one fetched source.",
+  ],
+  dropped_reasons: [{ text: "The site uses HTTPS, so it is safe.", why: "No evidence id supports it." }],
+  evidence,
+  llm: [
+    {
+      role: "decide",
+      model: "meta-llama/Llama-3.3-70B-Instruct",
+      started_at: "2026-11-27T15:02:19.120Z",
+      latency_ms: 3840,
+      prompt_tokens: 6120,
+      completion_tokens: 702,
+      request_id: "chatcmpl-8f2a91c4",
+      cached: false,
+    },
+    {
+      role: "skeptic",
+      model: "Qwen/Qwen3-235B-A22B",
+      started_at: "2026-11-27T15:02:23.010Z",
+      latency_ms: 2915,
+      prompt_tokens: 6480,
+      completion_tokens: 241,
+      request_id: "chatcmpl-1b7d03e2",
+      cached: false,
+    },
+    {
+      role: "judge",
+      model: "deepseek-ai/DeepSeek-V3",
+      started_at: "2026-11-27T15:02:26.000Z",
+      latency_ms: 2210,
+      prompt_tokens: 7010,
+      completion_tokens: 388,
+      request_id: "chatcmpl-c4e05a77",
+      cached: true,
+    },
+  ],
+  run: { id: "a1b2c3d4", started_at: at, duration_ms: 17420, version: "0.1.0", cache_hits: 1 },
+};
