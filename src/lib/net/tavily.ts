@@ -30,15 +30,22 @@ export interface TavilyExtracted {
   images?: string[];
 }
 
-async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<T> {
+async function post<T>(path: string, body: Record<string, unknown>, timeoutMs: number): Promise<T> {
   if (!config.tavilyKey) throw new Error("TAVILY_API_KEY missing");
-  const res = await politeFetch(`https://api.tavily.com/${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${config.tavilyKey}` },
-    body: JSON.stringify(body),
-    timeoutMs,
-    cacheTtlS: 86400, // same query in the same day = same answer, saves credits and makes reruns stable
-  });
+  const clean = JSON.stringify(Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined)));
+  const call = () =>
+    politeFetch(`https://api.tavily.com/${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${config.tavilyKey}` },
+      body: clean,
+      timeoutMs,
+      cacheTtlS: 86400, // same query in the same day = same answer, saves credits and makes reruns stable
+    });
+  let res = await call();
+  if (res.status === 429 || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 1500));
+    res = await call();
+  }
   if (!res.ok) throw new Error(`Tavily ${path} HTTP ${res.status}: ${res.text.slice(0, 200)}`);
   return JSON.parse(res.text) as T;
 }
