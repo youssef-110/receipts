@@ -10,9 +10,15 @@ function v4Private(p: number[]): boolean {
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
+    (a === 192 && b === 0 && (p[2] === 0 || p[2] === 2)) || // 192.0.0.0/24 IETF, 192.0.2.0/24 TEST-NET-1
+    (a === 198 && (b === 18 || b === 19)) || // 198.18.0.0/15 benchmarking
+    (a === 198 && b === 51 && p[2] === 100) || // TEST-NET-2
+    (a === 203 && b === 0 && p[2] === 113) || // TEST-NET-3
     a >= 224 // multicast/reserved
   );
 }
+
+const v4FromGroups = (hi: number, lo: number): number[] => [hi >> 8, hi & 255, lo >> 8, lo & 255];
 
 /** Expand an IPv6 string into 8 16-bit groups. */
 function v6Groups(ip: string): number[] {
@@ -43,7 +49,11 @@ export function isPrivateIp(ip: string): boolean {
     (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) ||
     g.slice(0, 6).every((x) => x === 0) ||
     (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0));
-  if (embedded) return v4Private([g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255]);
+  if (embedded) return v4Private(v4FromGroups(g[6], g[7]));
+  if (g[0] === 0x64 && g[1] === 0xff9b && g[2] === 1) return true; // 64:ff9b:1::/48 local NAT64
+  if (g[0] === 0x2002) return v4Private(v4FromGroups(g[1], g[2])); // 6to4 embeds IPv4 in groups 1-2
+  if (g[0] === 0x2001 && g[1] === 0) return v4Private(v4FromGroups(g[6] ^ 0xffff, g[7] ^ 0xffff)); // Teredo: inverted client IPv4
+  if ((g[0] & 0xe000) !== 0x2000) return true; // only global unicast 2000::/3 is public
   return false;
 }
 
