@@ -13,8 +13,19 @@ const WINDOW_MS = 60 * 60 * 1000;
 // shortcut: in-memory per-process limiter, resets on restart and is not shared across instances; move to KV if deployed at scale.
 const hits = new Map<string, number[]>();
 
+// Client IP from the proxy we deploy behind: Vercel sets x-real-ip and overwrites x-forwarded-for,
+// so a client-supplied value can't be used to rotate identities. Right-most XFF entry is the one our proxy added.
+function clientIp(req: Request): string {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const xff = req.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean);
+  return xff?.at(-1) || "local";
+}
+
 function rateLimited(ip: string): boolean {
   const now = Date.now();
+  // Bound memory: drop IPs whose hits have all expired once the map grows.
+  if (hits.size > 5000) for (const [k, ts] of hits) if (ts.every((t) => now - t >= WINDOW_MS)) hits.delete(k);
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= LIMIT) {
     hits.set(ip, recent);
@@ -40,8 +51,7 @@ export async function POST(req: Request): Promise<Response> {
   const watchKey = process.env.WATCH_KEY;
   const trusted = Boolean(watchKey) && req.headers.get("x-receipts-key") === watchKey;
   if (!trusted) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-    if (rateLimited(ip)) {
+    if (rateLimited(clientIp(req))) {
       return Response.json({ error: "Limit reached: 10 checks per hour. Try again later." }, { status: 429 });
     }
   }
