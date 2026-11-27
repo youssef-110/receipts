@@ -20,25 +20,28 @@ const chunk = (type, data) => {
   return Buffer.concat([len, td, crc]);
 };
 
-// Unit-square coordinates (0..1). Returns [r,g,b,a].
+// Unit-square coordinates (0..1). Returns [r,g,b,a]. Same mark as src/app/icon.svg (32-unit grid):
+// white receipt with a torn bottom edge on an accent tile, verified tick cut out in the accent colour.
+const ACCENT = [52, 69, 194, 255], PAPER = [255, 255, 255, 255];
+const TICK = [[10.5, 15.25], [14.25, 19], [21.5, 11.5]];
+const segDist = (px, py, [ax, ay], [bx, by]) => {
+  const dx = bx - ax, dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+};
 function pixel(x, y) {
-  const inRound = (() => { // rounded-square background
-    const r = 0.18, cx = Math.min(Math.max(x, r), 1 - r), cy = Math.min(Math.max(y, r), 1 - r);
-    return (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
-  })();
-  if (!inRound) return [0, 0, 0, 0];
-  const bg = [15, 107, 83, 255], paper = [255, 255, 255, 255], ink = [15, 107, 83, 255];
-  const L = 0.24, R = 0.76, T = 0.14, B = 0.86;
-  if (x < L || x > R || y < T) return bg;
-  // zigzag bottom edge: 4 teeth
-  const tooth = ((x - L) / (R - L)) * 4, f = tooth - Math.floor(tooth);
-  const edge = B - 0.06 * Math.abs(f * 2 - 1);
-  if (y > edge) return bg;
-  // text lines + total bar
-  const lines = [[0.28, 0.66], [0.40, 0.66], [0.52, 0.5]];
-  for (const [ly, lx2] of lines) if (Math.abs(y - ly) < 0.026 && x > 0.31 && x < lx2 + 0.1) return ink;
-  if (Math.abs(y - 0.66) < 0.035 && x > 0.31 && x < 0.69) return ink;
-  return paper;
+  const r = 0.22, cx = Math.min(Math.max(x, r), 1 - r), cy = Math.min(Math.max(y, r), 1 - r);
+  if ((x - cx) ** 2 + (y - cy) ** 2 > r * r) return [0, 0, 0, 0]; // rounded-square tile
+  // Receipt sits on a 32-unit grid scaled to 78% of the tile, centred.
+  const u = (x - 0.11) / 0.78 * 32, v = (y - 0.11) / 0.78 * 32;
+  if (u < 5 || u > 27 || v < 3) return ACCENT;
+  // top corners, radius 3
+  for (const ccx of [8, 24]) if (v < 6 && (ccx === 8 ? u < 8 : u > 24) && Math.hypot(u - ccx, v - 6) > 3) return ACCENT;
+  // torn bottom: 3 teeth between y 26.25 and 28.5
+  const f = ((u - 5) / 22) * 3, t = Math.abs((f - Math.floor(f)) * 2 - 1);
+  if (v > 26.25 + 2.25 * t) return ACCENT;
+  if (segDist(u, v, TICK[0], TICK[1]) < 1.5 || segDist(u, v, TICK[1], TICK[2]) < 1.5) return ACCENT;
+  return PAPER;
 }
 
 function png(size) {
