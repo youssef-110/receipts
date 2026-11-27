@@ -48,7 +48,12 @@ export function excerpt(text: string, brand: string, width = 180): string {
 
 /** Resolve within ms or give up with the fallback (keeps a slow API from killing the whole collector). */
 export function within<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([p.catch(() => fallback), new Promise<T>((r) => setTimeout(() => r(fallback), Math.max(0, ms)))]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<T>((r) => {
+    timer = setTimeout(() => r(fallback), Math.max(0, ms));
+  });
+  // Clear the timer so a settled race does not keep the process alive.
+  return Promise.race([p.catch(() => fallback), late]).finally(() => clearTimeout(timer));
 }
 
 const DIRECTORIES =
@@ -59,19 +64,59 @@ const LISTICLE = /alternative|competitor|\bvs\.?\b|versus|comparison|\btop \d+|\
 const CUSTOMERISH =
   /case stud|customer|success stor|partner|\buses\b|\busing\b|chose|selected|switched|implemented|rolled out|referenz|kunde|einsetz|eingeführt/i;
 const PRODUCT_WORD =
-  /software|platform|\bapp\b|tool|saas|solution|system|integration|customer|partner|vendor|anbieter|lösung|plattform/i;
+  /software|platform|\bapp\b|tool|saas|solution|system|integration|customer|partner|vendor|anbieter|lösung|plattform|\b(gmbh|ag|inc|ltd|llc|corp\w*|plc)\b/i;
 const FIRST_PERSON = /\b(we|our|us|wir|unser\w*)\b/i;
 const USAGE = /\b(use[sd]?|using|chose|selected|switched|implemented|rolled out|introduced|partner\w*|nutzen|einsetz\w*|eingeführt)\b/i;
+// A capitalized word right before the brand makes it part of another name ("Copeland Buhl").
+const PROPER_PREFIX = /\p{Lu}[\p{L}'’-]*\s+$/u;
+// Same for a capitalized word right after ("Fast Company"), unless the name ends in a company form ("Buhl Data Service GmbH").
+const PROPER_SUFFIX = /^[ \t]+\p{Lu}/u;
+const COMPANY_NAME = /^([ \t]+\p{Lu}[\p{L}-]*){0,3}[ \t]+(GmbH|AG|SE|KG|Inc|Ltd|LLC|Corp\w*|plc)\b/u;
 
-/** Brand appears AND the page is about the vendor (its domain, or a product word near the name). */
-function confirmsBrand(text: string, brand: string, domain: string): boolean {
+/** Brand appears AND the page is about the vendor (its domain, or a product/company word near a real mention). */
+export function confirmsBrand(text: string, brand: string, domain: string): boolean {
   if (!brandRe(brand).test(text)) return false;
-  if (text.toLowerCase().includes(domain)) return true;
+  // Domain as a whole token: "fast.co" must not match "fast.com" or "breakfast.co".
+  if (new RegExp(`(^|[^\\w.-])${esc(domain)}(?![\\w-]|\\.\\w)`, "i").test(text)) return true;
+  const capital = /^\p{Lu}/u.test(brand);
+  // The brand is also an everyday word on this page ("fast"): a capital at sentence start or in a compound proves nothing.
+  const common = capital && new RegExp(`(^|\\s)${esc(brand.toLowerCase())}[\\s-]`, "u").test(text);
   const re = new RegExp(brandRe(brand).source, "giu");
   for (let m = re.exec(text); m; m = re.exec(text)) {
-    if (PRODUCT_WORD.test(text.slice(Math.max(0, m.index - 150), m.index + 150))) return true;
+    const at = m.index + (m[1] ?? "").length;
+    const after = text.slice(at + brand.length, at + brand.length + 60);
+    // "fast-track" is not the company Fast; "Copeland Buhl" and "Fast Company" are other names.
+    if (capital && /^\p{Ll}/u.test(text.slice(at))) continue;
+    if (common && (/(^|[.!?]\s+|\n[\s#*>-]*)$/u.test(text.slice(Math.max(0, at - 6), at)) || /^-\p{L}/u.test(after))) continue;
+    if (PROPER_PREFIX.test(text.slice(Math.max(0, at - 40), at))) continue;
+    if (PROPER_SUFFIX.test(after) && !COMPANY_NAME.test(after)) continue;
+    if (PRODUCT_WORD.test(text.slice(Math.max(0, at - 100), at + brand.length + 100))) return true;
   }
   return false;
+}
+
+/** Defence products ("fraud detection", "anti-fraud") name a risk without reporting one. */
+export const BENIGN_RISK =
+  /\banti-?(fraud|scam)\w*|\b(fraud|scam|breach|hack|attack|intrusion|ransomware|vulnerability|outage)[\s-]+(detection|prevention|protection|platform|decisions?|scor\w*|models?|teams?|analysts?|solutions?|tools?|monitoring|management|engine|fighting|surface|scann\w*|assessment)\b|\b(without|no) compromise\b|\blawsuit-free\b/gi;
+const INCIDENTS: { re: RegExp; label: string }[] = [
+  {
+    re: /\b(data breach|breach(ed|es)?|hack(ed|ers?)|compromised?|vulnerabilit(y|ies)|ransomware|cyber-?attacks?|cyber-?espionage|attack(s|ed)?|data leak)\b/i,
+    label: "a security incident",
+  },
+  { re: /\b(lawsuits?|sued|class action)\b/i, label: "a lawsuit" },
+  { re: /\boutages?\b/i, label: "an outage" },
+  { re: /\bfraud\w*/i, label: "fraud allegations" },
+];
+
+/** A page about a breach, lawsuit, outage or fraud involving the brand is a red flag, not a reference. */
+export function incidentOf(title: string, ex: string, published?: string | null, year = new Date().getFullYear()) {
+  const blob = `${title} ${ex}`.replace(BENIGN_RISK, " ");
+  const k = INCIDENTS.find((i) => i.re.test(blob));
+  if (!k) return null;
+  // Earliest year named is the incident's; no year at all counts as old.
+  const yrs = [...blob.matchAll(/\b(20\d\d)\b/g)].map((m) => Number(m[1]));
+  const when = yrs.length ? Math.min(...yrs) : published ? new Date(published).getFullYear() : NaN;
+  return { label: k.label, strength: (year - when <= 3 ? 3 : 2) as 2 | 3 };
 }
 
 /** The page is a case study ABOUT the brand (brand is the host's customer): proves the brand exists, not that anyone uses it. */
@@ -139,6 +184,23 @@ async function customerPages(brand: string, domain: string, deadline: number): P
     // Extract failed or timed out: fall back to the search snippet, unverified and one notch weaker.
     const text = page ?? `${p.title} ${p.content}`;
     if (!confirmsBrand(text, brand, domain)) continue;
+    const inc = incidentOf(p.title, excerpt(text, brand, 400), p.published_date);
+    if (inc) {
+      out.push({
+        id: `mentions:incident-${slug(host)}`,
+        collector: "mentions",
+        claim: clip(`Page on ${host} reports ${inc.label} involving ${brand}: "${p.title}"`, 200),
+        url: p.url,
+        tier: "red_flag",
+        polarity: "undermines",
+        strength: inc.strength,
+        source: "Tavily -> incident report",
+        fetched_at: now(),
+        verified: !!page,
+        data: { title: clip(p.title, 160), excerpt: excerpt(text, brand), kind: "incident" },
+      });
+      continue;
+    }
     const about = aboutBrand(p.title, p.url, brand);
     const s = about ? 2 : customerStrength(text, brand, host, p.title, p.url);
     const strength = (page ? s : Math.max(1, s - 1)) as 1 | 2 | 3;

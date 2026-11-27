@@ -2,7 +2,7 @@
 import { politeFetch } from "../net/politeFetch";
 import { search } from "../net/tavily";
 import type { Collector, Evidence, RunCtx } from "../types";
-import { brandOf, brandRe, clip, hostOf, now, slug } from "./mentions";
+import { BENIGN_RISK, brandOf, brandRe, clip, hostOf, now, slug } from "./mentions";
 
 // WP3b. Known breaches (HaveIBeenPwned, keyless endpoint) and risk news about the brand.
 
@@ -57,11 +57,12 @@ const RISKS: { kind: string; re: RegExp; label: string }[] = [
 const VICTIM = /phishing|impersonat\w*|posing as|pretending to be|fake (email|website|site|job|recruiter)|scammers? (use|using)/i;
 const WINDOW = 120;
 
-function riskNear(text: string, brand: string) {
+export function riskNear(text: string, brand: string) {
   // Case-sensitive brand: "Linear" the company vs "linear" the adjective.
   const re = new RegExp(brandRe(brand, "").source, "gu");
   for (let m = re.exec(text); m; m = re.exec(text)) {
-    const w = text.slice(Math.max(0, m.index - WINDOW), m.index + brand.length + WINDOW);
+    // "fraud detection" / "anti-fraud" describe a product, not an allegation.
+    const w = text.slice(Math.max(0, m.index - WINDOW), m.index + brand.length + WINDOW).replace(BENIGN_RISK, " ");
     if (VICTIM.test(w)) continue;
     const r = RISKS.find((k) => k.re.test(w));
     if (r) return r;
