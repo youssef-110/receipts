@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Mode, ProgressEvent, Verdict } from "../../lib/types";
 import { sampleVerdict } from "../fixtures/sample-verdict";
+import { LogoMark, Wordmark } from "./Logo";
 import { emptyProgress, ProgressPanel, reduceProgress, type ProgressState } from "./ProgressPanel";
 import { VerdictView } from "./VerdictView";
 
 type ModeChoice = Mode | "auto";
 
 const MODE_OPTIONS: { value: ModeChoice; label: string }[] = [
-  { value: "auto", label: "Detect automatically" },
+  { value: "auto", label: "Detect type" },
   { value: "vendor", label: "Software vendor" },
   { value: "shop", label: "Online shop" },
   { value: "marketplace", label: "Marketplace listing" },
@@ -17,7 +18,8 @@ const MODE_OPTIONS: { value: ModeChoice; label: string }[] = [
 
 const EXAMPLES: { url: string; mode: ModeChoice; note: string }[] = [
   { url: "atlassian.com", mode: "vendor", note: "Established vendor" },
-  { url: "personio.com", mode: "vendor", note: "Old domain, younger brand" },
+  { url: "personio.com", mode: "vendor", note: "Old domain, newer brand" },
+  { url: "https://kontorflow-demo.vercel.app", mode: "vendor", note: "Hollow vendor" },
   { url: "allbirds.com", mode: "shop", note: "Online shop" },
   { url: "https://www.amazon.com/dp/B08KTZ8249", mode: "marketplace", note: "Amazon listing" },
 ];
@@ -155,73 +157,83 @@ export function ReceiptsApp() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6">
-      <header className="flex items-center justify-between py-6">
-        <a href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <ReceiptIcon />
-          Receipts
+    <div className="mx-auto max-w-3xl px-4 sm:px-6">
+      <header className="flex h-16 items-center justify-between">
+        <a href="/" className="rounded-md" aria-label="Receipts home">
+          <Wordmark />
         </a>
-        <a href="?demo=1" className="text-sm text-muted underline-offset-4 hover:text-ink hover:underline">
-          See a sample result
+        <a href="?demo=1" className="press rounded-md px-1 text-sm text-muted hover:text-ink">
+          Sample result
         </a>
       </header>
 
-      <section className="pb-10 pt-8 sm:pt-14" aria-labelledby="hero-heading">
-        <h1 id="hero-heading" className="max-w-[16ch] text-[2.6rem] font-bold leading-[1.02] tracking-[-0.035em] sm:text-6xl">
-          Websites are free to fake. History isn&apos;t.
+      <section className="pb-12 pt-12 sm:pb-16 sm:pt-24" aria-labelledby="hero-heading">
+        <h1
+          id="hero-heading"
+          className="max-w-[15ch] text-balance font-serif text-[2.6rem] font-normal leading-[1.04] tracking-[-0.025em] sm:text-[3.75rem]"
+        >
+          Websites are free to fake. <span className="text-muted">History isn&apos;t.</span>
         </h1>
-        <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted">
-          Paste a link to a software vendor, a shop you saw in an ad, or a marketplace listing. Receipts checks what a site
-          can&apos;t fake (domain age, archive history, company registers, outside reviews) and gives a verdict where every
-          reason links to its proof.
+        <p className="mt-5 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted">
+          Paste a software vendor, a shop you saw in an ad, or a marketplace listing. Receipts checks what a site can&apos;t
+          fake (domain age, archive history, company registers, outside reviews) and returns a verdict where every reason
+          links to its proof.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-8 rounded-xl border border-line bg-paper p-2 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <label htmlFor="url" className="sr-only">
-              Website or listing URL
-            </label>
-            <input
-              id="url"
-              name="url"
-              type="text"
-              inputMode="url"
-              autoComplete="url"
-              spellCheck={false}
-              required
-              maxLength={2048}
-              placeholder="example.com or https://shop.example/product"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="min-w-0 flex-1 rounded-lg bg-transparent px-3 py-3 text-lg outline-none placeholder:text-muted/70 focus-visible:outline-2 focus-visible:outline-accent"
-            />
+        <form
+          onSubmit={onSubmit}
+          className="mt-9 rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-16px_rgb(0_0_0/0.16)] transition-[border-color,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--accent)_20%,transparent)]"
+        >
+          <label htmlFor="url" className="sr-only">
+            Website or listing URL
+          </label>
+          <input
+            id="url"
+            name="url"
+            type="text"
+            inputMode="url"
+            autoComplete="url"
+            spellCheck={false}
+            required
+            maxLength={2048}
+            placeholder="example.com or a product link"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="w-full min-w-0 rounded-t-2xl bg-transparent px-5 pb-2 pt-4 text-lg outline-none placeholder:text-muted/60 focus-visible:outline-none"
+          />
+          <div className="flex items-center justify-between gap-3 px-3 pb-3 pt-1">
             <label htmlFor="mode" className="sr-only">
               What kind of site is it?
             </label>
-            <select
-              id="mode"
-              value={mode}
-              onChange={(e) => setMode(e.target.value as ModeChoice)}
-              className="rounded-lg border border-line bg-paper px-3 py-3 text-sm sm:w-48"
-            >
-              {MODE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <span className="relative">
+              <select
+                id="mode"
+                value={mode}
+                onChange={(e) => setMode(e.target.value as ModeChoice)}
+                className="press appearance-none rounded-lg bg-sunk py-2 pl-3 pr-8 text-sm text-ink hover:bg-line/70"
+              >
+                {MODE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <svg viewBox="0 0 16 16" className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" aria-hidden>
+                <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
             <button
               type="submit"
               disabled={running || !url.trim()}
-              className="rounded-lg bg-accent px-6 py-3 font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="press rounded-xl bg-ink px-5 py-2 text-sm font-semibold text-desk enabled:hover:bg-ink/85 disabled:opacity-35"
             >
               {running ? "Checking…" : "Check"}
             </button>
           </div>
         </form>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted">Try:</span>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+          <span className="mr-1 text-muted">Try</span>
           {EXAMPLES.map((ex) => (
             <button
               key={ex.url}
@@ -232,39 +244,44 @@ export function ReceiptsApp() {
                 setMode(ex.mode);
                 void run(ex.url, ex.mode);
               }}
-              className="rounded-full border border-line bg-paper px-3 py-1 text-left transition-colors hover:border-accent disabled:opacity-50"
+              className="press rounded-full border border-line px-3 py-1.5 text-left hover:border-ink/20 hover:bg-paper disabled:opacity-40"
             >
-              <span className="font-medium">{ex.url.replace(/^https:\/\/www\./, "").slice(0, 28)}</span>
-              <span className="text-muted"> {ex.note}</span>
+              <span className="font-medium">{ex.url.replace(/^https:\/\/(www\.)?/, "").slice(0, 28)}</span>
+              <span className="text-muted"> · {ex.note}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <div ref={resultRef} className="scroll-mt-4 space-y-6 pb-16">
+      <div ref={resultRef} className="scroll-mt-4 space-y-8 pb-20">
         {error && (
           <div
             role="alert"
-            className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
-              error.kind === "rate" ? "border-caution/40 bg-caution/10 text-caution" : "border-avoid/40 bg-avoid/10 text-avoid"
-            }`}
+            className="rise flex flex-col gap-4 rounded-2xl border border-line bg-paper p-5 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <p className="font-semibold">
-                {error.kind === "rate" ? "Hourly limit reached" : error.kind === "input" ? "That address won't work" : "The check did not finish"}
-              </p>
-              <p className="mt-1 text-sm">{error.msg}</p>
-              {error.kind === "rate" && (
-                <p className="mt-1 text-sm">
-                  Meanwhile, <a href="?demo=1" className="font-medium underline underline-offset-2">see a sample result</a>.
+            <div className="flex gap-3">
+              <span className={`mt-2 size-2 shrink-0 rounded-full ${error.kind === "rate" ? "bg-caution" : "bg-avoid"}`} aria-hidden />
+              <div>
+                <p className="font-semibold">
+                  {error.kind === "rate" ? "Hourly limit reached" : error.kind === "input" ? "That address won't work" : "The check did not finish"}
                 </p>
-              )}
+                <p className="mt-1 text-sm leading-relaxed text-muted">{error.msg}</p>
+                {error.kind === "rate" && (
+                  <p className="mt-1 text-sm text-muted">
+                    Meanwhile,{" "}
+                    <a href="?demo=1" className="font-medium text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
+                      see a sample result
+                    </a>
+                    .
+                  </p>
+                )}
+              </div>
             </div>
             {error.kind === "retry" && last && (
               <button
                 type="button"
                 onClick={() => void run(last.input, last.m, last.fresh)}
-                className="shrink-0 rounded-lg border border-current px-4 py-2 text-sm font-semibold transition-colors hover:bg-avoid/10"
+                className="press shrink-0 self-start rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-desk hover:bg-ink/85 sm:self-center"
               >
                 Try again
               </button>
@@ -272,7 +289,8 @@ export function ReceiptsApp() {
           </div>
         )}
         {warning && verdict && (
-          <p role="status" className="rounded-lg border border-caution/40 bg-caution/10 px-4 py-2 text-sm text-caution">
+          <p role="status" className="flex gap-3 rounded-xl bg-caution/10 px-4 py-3 text-sm leading-relaxed text-caution">
+            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-caution" aria-hidden />
             {warning}
           </p>
         )}
@@ -291,20 +309,11 @@ export function ReceiptsApp() {
   );
 }
 
-function ReceiptIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-6 text-accent" aria-hidden>
-      <path
-        d="M5 3h14v18l-2.33-1.5L14.33 21 12 19.5 9.67 21 7.33 19.5 5 21V3z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path d="M8.5 8h7M8.5 11.5h7M8.5 15h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
+const HOW = [
+  { n: "1", t: "Read the site", d: "What it claims about itself. Cheap to fake, so it counts least." },
+  { n: "2", t: "Pull the history", d: "Domain age, archive snapshots, certificates, company registers, outside mentions." },
+  { n: "3", t: "Weigh and argue", d: "Models on Nebius decide, a skeptic argues back, a judge settles. Unsourced reasons are removed." },
+];
 
 function Footer() {
   const linkRef = useRef<HTMLAnchorElement>(null);
@@ -316,28 +325,35 @@ function Footer() {
     );
   }, []);
   return (
-    <footer className="border-t border-line py-8 text-sm text-muted">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-[62ch]">
-          How it works: we read the site, then pull its history and outside records in parallel. AI models on Nebius weigh
-          the evidence, a second model argues the other side, and any reason without a fetched source is removed.
-        </p>
-        <div className="shrink-0">
+    <footer className="border-t border-line py-12 text-sm">
+      <h2 className="font-semibold">How it works</h2>
+      <ol className="mt-4 grid gap-6 sm:grid-cols-3">
+        {HOW.map((s) => (
+          <li key={s.n}>
+            <p className="font-mono text-xs text-muted">{s.n}</p>
+            <p className="mt-1 font-medium">{s.t}</p>
+            <p className="mt-1 leading-relaxed text-muted">{s.d}</p>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-10 flex flex-col gap-3 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div>
           <a
             ref={linkRef}
             href="#"
             onClick={(e) => e.preventDefault()}
             draggable
-            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-accent px-3 py-2 font-medium text-accent"
+            className="press inline-flex cursor-grab items-center gap-2 rounded-full border border-line bg-paper px-3.5 py-2 font-medium hover:border-ink/20 active:cursor-grabbing"
             aria-describedby="bm-hint"
           >
-            <ReceiptIcon />
-            Check this page with Receipts
+            <LogoMark className="size-4 text-accent" />
+            Check with Receipts
           </a>
-          <p id="bm-hint" className="mt-1 text-xs">
+          <p id="bm-hint" className="mt-2 text-xs text-muted">
             Drag it to your bookmarks bar, then click it on any shop or vendor page.
           </p>
         </div>
+        <p className="text-xs text-muted">Every reason links to its proof.</p>
       </div>
     </footer>
   );

@@ -86,35 +86,42 @@ export function ProgressPanel({ p, running }: { p: ProgressState; running: boole
   const elapsed = useElapsed(p.startedAt, running);
 
   return (
-    <section className="rounded-xl border border-line bg-paper p-5 sm:p-6" aria-labelledby="progress-heading">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 id="progress-heading" className="text-lg font-semibold tracking-tight">
+    <section className="rise rounded-2xl border border-line bg-paper p-5 sm:p-7" aria-labelledby="progress-heading">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="progress-heading" className="font-semibold">
           {running ? "Checking" : "Check finished"}
-          <span className="ml-2 font-mono text-sm font-normal tabular-nums text-muted" aria-label={`${Math.floor(elapsed)} seconds`}>
-            {elapsed.toFixed(1)} s
+          <span className="ml-2.5 font-mono text-sm font-normal tabular-nums text-muted" aria-label={`${Math.floor(elapsed)} seconds`}>
+            {elapsed.toFixed(1)}s
           </span>
         </h2>
-        <span className="text-sm tabular-nums text-muted">
-          {total} receipts{p.llmCalls > 0 ? ` / ${p.llmCalls} model calls` : ""}
+        <span className="font-mono text-xs tabular-nums text-muted">
+          {total} receipts{p.llmCalls > 0 ? ` · ${p.llmCalls} model calls` : ""}
         </span>
       </div>
       <p className="sr-only" aria-live="polite">
         {lastLabel}. {total} receipts so far.
       </p>
-      <ol className="mt-4 space-y-3">
+      <ol className="mt-5">
         {STAGES.map((st, i) => {
           const state = rowState(p, i, current);
           return (
-            <li key={st.id} className="flex gap-3">
-              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center" aria-hidden>
+            <li key={st.id} className="relative flex gap-3.5 pb-4 last:pb-0">
+              {i < STAGES.length - 1 && <span className="absolute left-[9.5px] top-6 bottom-1 w-px bg-line" aria-hidden />}
+              <span className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center" aria-hidden>
                 {state === "done" && (
-                  <svg viewBox="0 0 16 16" className="size-4 text-trust">
-                    <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
+                  <span className="flex size-5 items-center justify-center rounded-full bg-sunk">
+                    <svg viewBox="0 0 16 16" className="size-3 text-ink">
+                      <path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                 )}
-                {state === "active" && <span className="pulse size-2.5 animate-ping rounded-full bg-accent" />}
-                {state === "pending" && <span className="size-2 rounded-full bg-line" />}
-                {state === "skipped" && <span className="h-0.5 w-3 rounded-full bg-muted/60" />}
+                {state === "active" && (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-accent/12">
+                    <span className="breathe size-2 rounded-full bg-accent" />
+                  </span>
+                )}
+                {state === "pending" && <span className="size-2 rounded-full border border-line bg-paper" />}
+                {state === "skipped" && <span className="h-px w-2.5 bg-muted/60" />}
               </span>
               <div className="min-w-0 flex-1">
                 <p className={state === "pending" || state === "skipped" ? "text-muted" : "font-medium"}>
@@ -128,7 +135,7 @@ export function ProgressPanel({ p, running }: { p: ProgressState; running: boole
                 {st.id === "collect" && (Object.keys(p.counts).length > 0 || p.errors.length > 0) && (
                   <ul className="mt-2 flex flex-wrap gap-1.5">
                     {Object.entries(p.counts).map(([c, n]) => (
-                      <li key={c} className="rounded-md border border-line px-2 py-0.5 font-mono text-xs">
+                      <li key={c} className="rise rounded-md bg-sunk px-2 py-0.5 font-mono text-xs">
                         {c} <span className="text-accent">+{n}</span>
                       </li>
                     ))}
