@@ -25,3 +25,6 @@ next-env.d.ts
 *.log
 .DS_Store
 Thumbs.db
+
+# Local design-hook config
+.impeccable/

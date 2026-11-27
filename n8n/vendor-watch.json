@@ -1,0 +1,91 @@
+{
+  "name": "Receipts – weekly vendor watch",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "weeks", "triggerAtDay": [1], "triggerAtHour": 9 }] }
+      },
+      "id": "a1f0c7e2-0001-4c1a-9a01-000000000001",
+      "name": "Every Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {},
+      "id": "a1f0c7e2-0002-4c1a-9a01-000000000002",
+      "name": "Run now (demo)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The vendors your company depends on. Edit this list.\nconst vendors = ['atlassian.com', 'personio.com'];\nreturn vendors.map((url) => ({ json: { url } }));"
+      },
+      "id": "a1f0c7e2-0003-4c1a-9a01-000000000003",
+      "name": "Vendor list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://REPLACE-WITH-YOUR-APP.vercel.app/api/check",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "accept", "value": "application/json" },
+            { "name": "x-receipts-key", "value": "REPLACE_WITH_WATCH_KEY" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: $json.url, mode: 'vendor' }) }}",
+        "options": {
+          "timeout": 120000,
+          "batching": { "batch": { "batchSize": 1, "batchInterval": 10000 } }
+        }
+      },
+      "id": "a1f0c7e2-0004-4c1a-9a01-000000000004",
+      "name": "Check with Receipts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Remember last week's verdict per vendor; pass on only what changed.\n// First sighting of a non-Trust verdict also alerts (useful for the demo).\nconst store = $getWorkflowStaticData('global');\nstore.last = store.last || {};\nconst changes = [];\nfor (const item of $input.all()) {\n  const v = item.json;\n  const prev = store.last[v.input];\n  const changed = prev ? prev !== v.verdict : v.verdict !== 'Trust';\n  if (changed) {\n    const top = (v.reasons || []).slice(0, 2).map((r) => '• ' + r.text).join('\\n');\n    changes.push({ json: { url: v.input, from: prev || 'new', to: v.verdict, summary: v.summary, top } });\n  }\n  store.last[v.input] = v.verdict;\n}\nreturn changes;"
+      },
+      "id": "a1f0c7e2-0005-4c1a-9a01-000000000005",
+      "name": "Compare with last week",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/REPLACE/ME",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: `🧾 Receipts vendor watch: **${$json.url}** changed ${$json.from} → **${$json.to}**\\n${$json.summary}\\n${$json.top}` }) }}",
+        "options": {}
+      },
+      "id": "a1f0c7e2-0006-4c1a-9a01-000000000006",
+      "name": "Alert on Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 100]
+    }
+  ],
+  "connections": {
+    "Every Monday 09:00": { "main": [[{ "node": "Vendor list", "type": "main", "index": 0 }]] },
+    "Run now (demo)": { "main": [[{ "node": "Vendor list", "type": "main", "index": 0 }]] },
+    "Vendor list": { "main": [[{ "node": "Check with Receipts", "type": "main", "index": 0 }]] },
+    "Check with Receipts": { "main": [[{ "node": "Compare with last week", "type": "main", "index": 0 }]] },
+    "Compare with last week": { "main": [[{ "node": "Alert on Discord", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
