@@ -16,6 +16,11 @@ __pycache__/
 .pytest_cache/
 
 # Local data and caches
+# Stackgini data stays inside the event (their rule)
+data/stackgini/
+out/
+next-env.d.ts
+*.tsbuildinfo
 .cache/
 *.log
 .DS_Store
