@@ -13,6 +13,9 @@ const PLATFORM_SUFFIXES = [
 ];
 
 export function registrableDomain(host: string): string {
+  // On shared platforms the tenant's subdomain is the site's own domain (Public Suffix List private section):
+  // kontorflow-demo.vercel.app must not be treated as "vercel.app", or every check would research Vercel itself.
+  if (isPlatformHost(host)) return host.toLowerCase().replace(/^www\./, "");
   const parts = host.toLowerCase().replace(/^www\./, "").split(".");
   if (parts.length <= 2) return parts.join(".");
   const lastTwo = parts.slice(-2).join(".");
