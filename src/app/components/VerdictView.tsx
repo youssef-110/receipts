@@ -20,11 +20,38 @@ const VERDICT_STYLE: Record<VerdictLabel, { text: string; bg: string; note: stri
   Unsure: { text: "text-unsure", bg: "bg-unsure", note: "Not enough proof either way." },
 };
 
+/** What to do, in plain words. This is the line most people read. */
+const ADVICE: Record<VerdictLabel, Record<Mode, string>> = {
+  Trust: {
+    vendor: "Looks safe to work with.",
+    shop: "Looks safe to buy from.",
+    marketplace: "This listing looks genuine.",
+  },
+  Caution: {
+    vendor: "Possibly fine. Read the warning signs before you sign or pay.",
+    shop: "Possibly fine. Read the warning signs before you pay.",
+    marketplace: "Possibly fine. Read the warning signs before you order.",
+  },
+  Avoid: {
+    vendor: "Don't sign up or pay.",
+    shop: "Don't buy here.",
+    marketplace: "Don't order this listing.",
+  },
+  Unsure: {
+    vendor: "We couldn't tell. Do the checks below before you sign or pay.",
+    shop: "We couldn't tell. Do the checks below before you pay.",
+    marketplace: "We couldn't tell. Do the checks below before you order.",
+  },
+};
+
+const confidenceWord = (pct: number) => (pct >= 75 ? "High" : pct >= 50 ? "Medium" : "Low");
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 export const TIERS: { tier: Tier; label: string; hint: string; dot: string }[] = [
-  { tier: "claimed", label: "Vendor-claimed", hint: "What the site says about itself. Cheap to fake.", dot: "bg-muted/50" },
-  { tier: "time", label: "Proven by time", hint: "Domain, archive and certificate history. Hard to fake.", dot: "bg-accent" },
-  { tier: "third_party", label: "Confirmed by third parties", hint: "Registers, press and reviews outside the site.", dot: "bg-trust" },
-  { tier: "red_flag", label: "Red flags", hint: "Signals that often come with scams.", dot: "bg-avoid" },
+  { tier: "claimed", label: "What the site says", hint: "Claims the site makes about itself. Cheap to fake.", dot: "bg-muted/50" },
+  { tier: "time", label: "Its history", hint: "Domain age, archive snapshots, certificates. Hard to fake.", dot: "bg-accent" },
+  { tier: "third_party", label: "What others confirm", hint: "Company registers, press and reviews outside the site.", dot: "bg-trust" },
+  { tier: "red_flag", label: "Red flags", hint: "Signs that often come with scams.", dot: "bg-avoid" },
 ];
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.tier, t])) as Record<Tier, (typeof TIERS)[number]>;
 
@@ -89,7 +116,7 @@ function ReceiptLink({ e }: { e: Evidence }) {
           {e.source}
         </a>
         <TierBadge tier={e.tier} />
-        {!e.verified && <span className="text-xs text-muted">found by search, not fetched</span>}
+        {!e.verified && <span className="text-xs text-muted">search result</span>}
       </span>
     </li>
   );
@@ -273,11 +300,11 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
               >
                 {v.verdict}
               </p>
-              <p className={`mt-3 text-sm font-medium ${style.text}`}>{style.note}</p>
+              <p className="mt-4 max-w-[34ch] text-lg font-medium leading-snug">{ADVICE[v.verdict]?.[v.mode] ?? style.note}</p>
             </div>
             <div className="w-full sm:w-56 sm:pb-1">
               <div className="flex items-baseline justify-between text-sm">
-                <span className="text-muted">Confidence</span>
+                <span className="text-muted">{confidenceWord(pct)} confidence</span>
                 <span className="font-mono tabular-nums">{pct}%</span>
               </div>
               <div
@@ -295,6 +322,18 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
 
           <p className="mt-7 max-w-[62ch] text-pretty font-serif text-[1.2rem] leading-[1.6]">{v.summary}</p>
 
+          <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-trust" aria-hidden />
+              {plural(forTrust.length, "good sign")}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-avoid" aria-hidden />
+              {plural(against.length, "warning sign")}
+            </span>
+            <span>{plural(v.evidence.length, "source")} checked</span>
+          </p>
+
           {blocked && <BlockedNotice e={blocked} verdict={v.verdict} />}
 
           {(forTrust.length > 0 || against.length > 0) && (
@@ -303,7 +342,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
                 <div>
                   <h3 className="flex items-center gap-2 pt-5 text-sm font-semibold">
                     <span className="size-1.5 rounded-full bg-trust" aria-hidden />
-                    For trust
+                    Good signs
                   </h3>
                   <ul className="divide-y divide-line">{forTrust.map((r, i) => <ReasonItem key={i} r={r} byId={byId} />)}</ul>
                 </div>
@@ -312,7 +351,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
                 <div>
                   <h3 className="flex items-center gap-2 pt-5 text-sm font-semibold">
                     <span className="size-1.5 rounded-full bg-avoid" aria-hidden />
-                    Against trust
+                    Warning signs
                   </h3>
                   <ul className="divide-y divide-line">{against.map((r, i) => <ReasonItem key={i} r={r} byId={byId} />)}</ul>
                 </div>
@@ -322,7 +361,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
 
           {v.conflicts.length > 0 && (
             <div className="mt-6 rounded-xl bg-caution/10 px-4 pt-4">
-              <h3 className="text-sm font-semibold text-caution">Evidence that disagrees</h3>
+              <h3 className="text-sm font-semibold text-caution">Mixed signals</h3>
               <ul className="divide-y divide-caution/15">
                 {v.conflicts.map((c, i) => (
                   <ReasonItem key={i} r={{ text: c.text, evidence_ids: c.evidence_ids, stance: "against_trust" }} byId={byId} />
@@ -333,7 +372,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
 
           {v.check_next.length > 0 && (
             <div className="mt-7">
-              <h3 className="text-sm font-semibold">{v.verdict === "Unsure" ? "Unsure: check these next" : "Check these next"}</h3>
+              <h3 className="text-sm font-semibold">What you can do next</h3>
               <ol className="mt-3 space-y-2">
                 {v.check_next.map((c, i) => (
                   <li key={i} className="flex gap-3 leading-snug">
@@ -370,8 +409,13 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
 
       {images.length > 0 && <AdCompare items={images} style={delay(step++)} />}
 
+      <div className="rise pt-6" style={delay(step++)}>
+        <h2 className="font-serif text-[1.75rem] leading-tight tracking-[-0.02em]">How we got here</h2>
+        <p className="mt-1.5 text-sm text-muted">The details behind the verdict, for anyone who wants to check our work.</p>
+      </div>
+
       {v.skeptic && (
-        <Section title="The skeptic's case" aside="A second model argues against the verdict" style={delay(step++)}>
+        <Section title="The other side of the argument" aside="A second AI model tries to prove the verdict wrong" style={delay(step++)}>
           <p className="text-sm text-muted">
             Argued for <span className={`font-semibold ${VERDICT_STYLE[v.skeptic.argued_for]?.text ?? ""}`}>{v.skeptic.argued_for}</span> · strength{" "}
             <span className="font-semibold text-ink">{v.skeptic.strength}</span>
@@ -383,7 +427,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
         </Section>
       )}
 
-      <Section title="All evidence" aside={<span className="tabular-nums">{v.evidence.length} items</span>} style={delay(step++)}>
+      <Section title="Every source we checked" aside={<span className="tabular-nums">{v.evidence.length} items</span>} style={delay(step++)}>
         <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
           {TIERS.map((t) => {
             const items = v.evidence.filter((e) => e.tier === t.tier);
@@ -495,7 +539,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
       </Section>
 
       {v.prior && (
-        <Section title="Safety checks" style={delay(step++)}>
+        <Section title="Safety checks on the AI" style={delay(step++)}>
           <p className="text-sm text-muted">
             Rules-only verdict before the AI: <PriorBand band={v.prior.band} />
           </p>
