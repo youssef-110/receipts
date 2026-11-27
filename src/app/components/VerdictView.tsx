@@ -7,6 +7,12 @@ export const MODE_LABEL: Record<Mode, string> = {
   marketplace: "Marketplace listing",
 };
 
+const MODE_QUESTION: Record<Mode, string> = {
+  vendor: "Can you trust this vendor?",
+  shop: "Is this shop real?",
+  marketplace: "Is this listing real?",
+};
+
 const VERDICT_STYLE: Record<VerdictLabel, { text: string; bg: string; line: string; note: string }> = {
   Trust: { text: "text-trust", bg: "bg-trust", line: "border-trust", note: "The history checks out." },
   Caution: { text: "text-caution", bg: "bg-caution", line: "border-caution", note: "Proceed, but check the points below." },
@@ -72,6 +78,109 @@ function ReceiptLink({ e }: { e: Evidence }) {
   );
 }
 
+// Image evidence worth comparing side by side (shop: dropship + AI-image checks; marketplace: listing image check).
+const IMAGE_PREFIXES = ["shop-dropship:", "shop-images:", "mp-images:"];
+
+const IMAGE_RESULT: Record<string, string> = {
+  "same-product": "Same product sold on a marketplace",
+  "ai-generated": "Looks AI-generated",
+  match: "Shows the titled product",
+  mismatch: "Does not show the titled product",
+};
+
+function AdCompare({ items }: { items: Evidence[] }) {
+  return (
+    <Section title="Does it look like the ad?" aside={<span className="text-sm text-muted">Photos checked by a vision model</span>}>
+      <ul className="grid gap-5 sm:grid-cols-2">
+        {items.map((e) => {
+          const shopImg = typeof e.data?.shop_image === "string" ? e.data.shop_image : null;
+          const img = e.image ?? "";
+          const pics = shopImg
+            ? [
+                { src: shopImg, label: "On the shop" },
+                { src: img, label: `On ${host(e.url)}` },
+              ]
+            : [{ src: img, label: e.id.startsWith("mp-") ? "Listing photo" : "Shop photo" }];
+          const result = IMAGE_RESULT[e.id.slice(e.id.indexOf(":") + 1)] ?? (e.polarity === "undermines" ? "Red flag" : "No problem found");
+          const tone = e.polarity === "undermines" ? "text-avoid border-avoid/40 bg-avoid/10" : "text-trust border-trust/40 bg-trust/10";
+          return (
+            <li key={e.id} className={pics.length > 1 ? "sm:col-span-2" : "flex gap-4"}>
+              <div className={pics.length > 1 ? "grid max-w-xl grid-cols-2 gap-2" : "w-32 shrink-0 sm:w-40"}>
+                {pics.map((pic) => (
+                  <figure key={pic.label} className="min-w-0">
+                    <img
+                      src={pic.src}
+                      alt={`${pic.label}: ${e.claim}`}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="aspect-square w-full rounded-lg border border-line bg-desk object-contain"
+                    />
+                    <figcaption className="mt-1 truncate text-xs text-muted">{pic.label}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <div className="min-w-0">
+                <p className={`mt-2 inline-flex rounded border px-2 py-0.5 text-sm font-semibold ${tone}`}>{result}</p>
+                <p className="mt-1.5 leading-snug">{e.claim}</p>
+                <a
+                  href={e.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="mt-1 inline-block text-sm text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent"
+                >
+                  {e.source}
+                </a>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
+  );
+}
+
+function BlockedNotice({ e, verdict }: { e: Evidence; verdict: VerdictLabel }) {
+  const blocked = e.id === "site:blocked";
+  const what = blocked ? `${host(e.url)} blocked automated access with a bot check, so we could not read the site itself.` : e.claim;
+  return (
+    <div className="mt-5 rounded-lg border border-unsure/40 bg-unsure/10 p-4 text-sm">
+      <p className="font-semibold">
+        {blocked ? "The site blocked our check" : e.id === "site:unreachable" ? "We could not reach the site" : "We could not read the listing"}
+      </p>
+      <p className="mt-1 leading-relaxed">
+        {what}{" "}
+        {verdict === "Unsure"
+          ? "That is why the verdict is Unsure: a blocked or missing page is not evidence against the site, and the outside records alone are not enough to decide."
+          : "The verdict rests on its history and outside records only."}{" "}
+        Open the site in your own browser to see it.
+      </p>
+    </div>
+  );
+}
+
+function PriorBand({ band }: { band: VerdictLabel }) {
+  return (
+    <span className="group relative inline-flex items-center gap-1">
+      <span className={`font-semibold ${VERDICT_STYLE[band]?.text ?? ""}`}>{band}</span>
+      <span
+        tabIndex={0}
+        aria-describedby="prior-tip"
+        className="inline-flex size-4 cursor-help items-center justify-center rounded-full border border-current text-[10px] font-bold leading-none"
+      >
+        ?<span className="sr-only">What is this?</span>
+      </span>
+      <span
+        id="prior-tip"
+        role="tooltip"
+        className="invisible absolute left-0 top-full z-10 mt-2 w-72 rounded-lg border border-line bg-paper p-3 text-xs leading-relaxed text-ink opacity-0 shadow-lg transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100"
+      >
+        The verdict a fixed set of scoring rules gives from the evidence alone, before any AI model reads it. The AI may
+        disagree; the safety checks use this band as a guardrail.
+      </span>
+    </span>
+  );
+}
+
 function ReasonItem({ r, byId }: { r: Reason; byId: Map<string, Evidence> }) {
   const receipts = r.evidence_ids.map((id) => byId.get(id)).filter((e): e is Evidence => Boolean(e));
   return (
@@ -94,13 +203,15 @@ function Section({ title, children, aside }: { title: string; children: ReactNod
   );
 }
 
-export function VerdictView({ v, sample }: { v: Verdict; sample?: boolean }) {
+export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boolean; onRecheck?: () => void }) {
   const byId = new Map(v.evidence.map((e) => [e.id, e]));
   const style = VERDICT_STYLE[v.verdict] ?? VERDICT_STYLE.Unsure;
   const forTrust = v.reasons.filter((r) => r.stance === "for_trust");
   const against = v.reasons.filter((r) => r.stance === "against_trust");
   const pct = Math.round(Math.max(0, Math.min(1, v.confidence)) * 100);
   const totalLatency = v.llm.reduce((s, c) => s + c.latency_ms, 0);
+  const blocked = v.evidence.find((e) => ["site:blocked", "site:unreachable", "mp-listing:unreadable"].includes(e.id));
+  const images = v.mode === "vendor" ? [] : v.evidence.filter((e) => e.image && IMAGE_PREFIXES.some((p) => e.id.startsWith(p)));
 
   return (
     <div className="space-y-6">
@@ -121,9 +232,11 @@ export function VerdictView({ v, sample }: { v: Verdict; sample?: boolean }) {
 
           <div className="mt-5 flex flex-col-reverse gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-sm text-muted">{MODE_LABEL[v.mode] ?? v.mode}</p>
+              <p className="text-sm text-muted">
+                <span className="font-semibold text-ink">{MODE_QUESTION[v.mode] ?? "Can you trust this site?"}</span> {MODE_LABEL[v.mode] ?? v.mode}
+              </p>
               <h2 id="verdict-heading" className="mt-0.5 break-all text-2xl font-semibold tracking-tight sm:text-3xl">
-                {v.input}
+                {v.input.replace(/^https?:\/\/(www\.)?/, "")}
               </h2>
             </div>
             <div className={`stamp self-start px-4 py-1.5 text-3xl font-extrabold uppercase sm:text-4xl ${style.text}`} aria-label={`Verdict: ${v.verdict}`}>
@@ -142,6 +255,8 @@ export function VerdictView({ v, sample }: { v: Verdict; sample?: boolean }) {
           </div>
 
           <p className="mt-5 max-w-[65ch] text-[17px] leading-relaxed">{v.summary}</p>
+
+          {blocked && <BlockedNotice e={blocked} verdict={v.verdict} />}
 
           {(forTrust.length > 0 || against.length > 0) && (
             <div className="dotted mt-6 pb-1" aria-hidden />
@@ -186,6 +301,25 @@ export function VerdictView({ v, sample }: { v: Verdict; sample?: boolean }) {
           </p>
         </article>
       </div>
+
+      {onRecheck && (
+        <div className="-mt-2 flex flex-wrap items-center justify-end gap-x-4 gap-y-2 px-1 text-sm text-muted">
+          <span>
+            {v.run.cache_hits > 0
+              ? `${v.run.cache_hits} AI answer${v.run.cache_hits === 1 ? "" : "s"} came from cache.`
+              : "Repeat checks may reuse recent answers."}
+          </span>
+          <button
+            type="button"
+            onClick={onRecheck}
+            className="rounded-lg border border-line bg-paper px-3 py-1.5 font-medium text-ink transition-colors hover:border-accent"
+          >
+            Re-check live
+          </button>
+        </div>
+      )}
+
+      {images.length > 0 && <AdCompare items={images} />}
 
       {v.skeptic && (
         <Section title="The skeptic's case" aside={<span className="text-sm text-muted">A second model argues against the verdict</span>}>
@@ -297,11 +431,11 @@ export function VerdictView({ v, sample }: { v: Verdict; sample?: boolean }) {
         )}
       </Section>
 
-      {(v.guards.length > 0 || v.dropped_reasons.length > 0) && (
+      {v.prior && (
         <section className="px-1 text-sm text-muted">
           <h2 className="font-semibold text-ink">Safety checks</h2>
           <p className="mt-1">
-            Rules-only score before the AI step: {v.prior.band}, score {v.prior.score > 0 ? "+" : ""}{Math.round(v.prior.score * 10) / 10}.
+            Rules-only verdict before the AI: <PriorBand band={v.prior.band} />
           </p>
           {v.guards.length > 0 && (
             <ul className="mt-2 list-disc space-y-1 pl-5">{v.guards.map((g, i) => <li key={i}>{g}</li>)}</ul>

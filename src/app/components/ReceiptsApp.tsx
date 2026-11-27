@@ -24,6 +24,11 @@ const EXAMPLES: { url: string; mode: ModeChoice; note: string }[] = [
 
 const isMode = (m: string | null): m is ModeChoice => MODE_OPTIONS.some((o) => o.value === m);
 
+/** rate = 429 with a time; retry = network or stream failure worth retrying; input = bad URL. */
+type RunError = { kind: "rate" | "retry" | "input"; msg: string; retryAt?: number };
+
+const clock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 export function ReceiptsApp() {
   const [url, setUrl] = useState("");
   const [mode, setMode] = useState<ModeChoice>("auto");
@@ -31,18 +36,21 @@ export function ReceiptsApp() {
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [sample, setSample] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<RunError | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const bootRef = useRef(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const run = useCallback(async (target: string, m: ModeChoice) => {
+  const [last, setLast] = useState<{ input: string; m: ModeChoice; fresh: boolean } | null>(null);
+
+  const run = useCallback(async (target: string, m: ModeChoice, fresh = false) => {
     const input = target.trim();
     if (!input) return;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
+    setLast({ input, m, fresh });
     setRunning(true);
     setVerdict(null);
     setSample(false);
@@ -60,12 +68,23 @@ export function ReceiptsApp() {
       const res = await fetch("/api/check", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: input, mode: m }),
+        body: JSON.stringify(fresh ? { url: input, mode: m, fresh: true } : { url: input, mode: m }),
         signal: ac.signal,
       });
       if (!res.ok || !res.body) {
-        const j = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(j?.error ?? `The check failed (HTTP ${res.status}).`);
+        const j = (await res.json().catch(() => null)) as { error?: string; retryAt?: number } | null;
+        if (res.status === 429) {
+          const at = typeof j?.retryAt === "number" ? j.retryAt : Date.now() + Number(res.headers.get("retry-after") ?? 3600) * 1000;
+          const mins = Math.max(1, Math.ceil((at - Date.now()) / 60000));
+          setError({
+            kind: "rate",
+            retryAt: at,
+            msg: `This demo allows 10 checks per hour from one connection. The next check frees up at ${clock(at)} (in about ${mins} min).`,
+          });
+          return;
+        }
+        setError({ kind: res.status === 400 ? "input" : "retry", msg: j?.error ?? `The check failed (HTTP ${res.status}).` });
+        return;
       }
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -96,10 +115,12 @@ export function ReceiptsApp() {
       }
       handle(buf + dec.decode());
       if (gotVerdict) setWarning(lastError);
-      else setError(lastError ?? "The check ended without a verdict. Try again.");
+      else setError({ kind: "retry", msg: lastError ?? "The connection closed before a verdict arrived." });
     } catch (err) {
       if (ac.signal.aborted) return;
-      setError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      // fetch/stream failures surface as TypeError ("Failed to fetch", "network error", "terminated").
+      setError({ kind: "retry", msg: err instanceof TypeError ? `The connection to the server dropped (${msg}).` : msg });
     } finally {
       if (abortRef.current === ac) setRunning(false);
     }
@@ -222,9 +243,32 @@ export function ReceiptsApp() {
 
       <div ref={resultRef} className="scroll-mt-4 space-y-6 pb-16">
         {error && (
-          <div role="alert" className="rounded-xl border border-avoid/40 bg-avoid/10 p-4 text-avoid">
-            <p className="font-semibold">The check did not finish</p>
-            <p className="mt-1 text-sm">{error}</p>
+          <div
+            role="alert"
+            className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+              error.kind === "rate" ? "border-caution/40 bg-caution/10 text-caution" : "border-avoid/40 bg-avoid/10 text-avoid"
+            }`}
+          >
+            <div>
+              <p className="font-semibold">
+                {error.kind === "rate" ? "Hourly limit reached" : error.kind === "input" ? "That address won't work" : "The check did not finish"}
+              </p>
+              <p className="mt-1 text-sm">{error.msg}</p>
+              {error.kind === "rate" && (
+                <p className="mt-1 text-sm">
+                  Meanwhile, <a href="?demo=1" className="font-medium underline underline-offset-2">see a sample result</a>.
+                </p>
+              )}
+            </div>
+            {error.kind === "retry" && last && (
+              <button
+                type="button"
+                onClick={() => void run(last.input, last.m, last.fresh)}
+                className="shrink-0 rounded-lg border border-current px-4 py-2 text-sm font-semibold transition-colors hover:bg-avoid/10"
+              >
+                Try again
+              </button>
+            )}
           </div>
         )}
         {warning && verdict && (
@@ -232,8 +276,14 @@ export function ReceiptsApp() {
             {warning}
           </p>
         )}
-        {progress && (running || !verdict) && <ProgressPanel p={progress} running={running} />}
-        {verdict && <VerdictView v={verdict} sample={sample} />}
+        {progress && (running || (!verdict && progress.stage !== null)) && <ProgressPanel p={progress} running={running} />}
+        {verdict && (
+          <VerdictView
+            v={verdict}
+            sample={sample}
+            onRecheck={sample ? undefined : () => void run(verdict.input, verdict.mode, true)}
+          />
+        )}
       </div>
 
       <Footer />

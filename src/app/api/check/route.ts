@@ -22,18 +22,19 @@ function clientIp(req: Request): string {
   return xff?.at(-1) || "local";
 }
 
-function rateLimited(ip: string): boolean {
+/** Returns 0 when allowed, else the epoch ms when the next check frees up. */
+function rateLimited(ip: string): number {
   const now = Date.now();
   // Bound memory: drop IPs whose hits have all expired once the map grows.
   if (hits.size > 5000) for (const [k, ts] of hits) if (ts.every((t) => now - t >= WINDOW_MS)) hits.delete(k);
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= LIMIT) {
     hits.set(ip, recent);
-    return true;
+    return recent[0] + WINDOW_MS;
   }
   recent.push(now);
   hits.set(ip, recent);
-  return false;
+  return 0;
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -51,8 +52,12 @@ export async function POST(req: Request): Promise<Response> {
   const watchKey = process.env.WATCH_KEY;
   const trusted = Boolean(watchKey) && req.headers.get("x-receipts-key") === watchKey;
   if (!trusted) {
-    if (rateLimited(clientIp(req))) {
-      return Response.json({ error: "Limit reached: 10 checks per hour. Try again later." }, { status: 429 });
+    const retryAt = rateLimited(clientIp(req));
+    if (retryAt) {
+      return Response.json(
+        { error: "Limit reached: 10 checks per hour. Try again later.", retryAt },
+        { status: 429, headers: { "retry-after": String(Math.max(1, Math.ceil((retryAt - Date.now()) / 1000))) } },
+      );
     }
   }
 
