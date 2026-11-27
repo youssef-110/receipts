@@ -16,19 +16,19 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 80px",
-          background: "#f7f6f2",
-          color: "#1c1b18",
+          background: "#ffffff",
+          color: "#0b0b0c",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <StaticMark size={56} fill="#3445c2" cut="#f7f6f2" />
+          <StaticMark size={56} fill="#0b0b0c" cut="#ffffff" />
           <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.03em" }}>Receipts</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 84, lineHeight: 1.04, letterSpacing: "-0.035em", fontWeight: 600 }}>Websites are free to fake.</div>
-          <div style={{ fontSize: 84, lineHeight: 1.04, letterSpacing: "-0.035em", fontWeight: 600, color: "#67655e" }}>History isn&apos;t.</div>
+          <div style={{ fontSize: 84, lineHeight: 1.04, letterSpacing: "-0.035em", fontWeight: 600, color: "#6b6b70" }}>History isn&apos;t.</div>
         </div>
-        <div style={{ display: "flex", fontSize: 30, color: "#67655e" }}>Paste a link. Every reason in the verdict links to its proof.</div>
+        <div style={{ display: "flex", fontSize: 30, color: "#6b6b70" }}>Paste a link. Every reason in the verdict links to its proof.</div>
       </div>
     ),
     size,

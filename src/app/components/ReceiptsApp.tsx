@@ -182,7 +182,7 @@ export function ReceiptsApp() {
 
         <form
           onSubmit={onSubmit}
-          className="mt-9 rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-16px_rgb(0_0_0/0.16)] transition-[border-color,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--accent)_20%,transparent)]"
+          className="mt-9 rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-16px_rgb(0_0_0/0.16)] transition-[border-color,box-shadow] duration-200 focus-within:border-ink/60 focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--ink)_8%,transparent)]"
         >
           <label htmlFor="url" className="sr-only">
             Website or listing URL
@@ -269,7 +269,7 @@ export function ReceiptsApp() {
                 {error.kind === "rate" && (
                   <p className="mt-1 text-sm text-muted">
                     Meanwhile,{" "}
-                    <a href="?demo=1" className="font-medium text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
+                    <a href="?demo=1" className="font-medium text-ink underline decoration-ink/25 underline-offset-[3px] hover:decoration-ink">
                       see a sample result
                     </a>
                     .
@@ -346,7 +346,7 @@ function Footer() {
             className="press inline-flex cursor-grab items-center gap-2 rounded-full border border-line bg-paper px-3.5 py-2 font-medium hover:border-ink/20 active:cursor-grabbing"
             aria-describedby="bm-hint"
           >
-            <LogoMark className="size-4 text-accent" />
+            <LogoMark className="size-4 text-ink" />
             Check with Receipts
           </a>
           <p id="bm-hint" className="mt-2 text-xs text-muted">

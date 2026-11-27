@@ -28,7 +28,7 @@ export const TIERS: { tier: Tier; label: string; hint: string; dot: string }[] =
 ];
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.tier, t])) as Record<Tier, (typeof TIERS)[number]>;
 
-const LINK = "text-accent underline decoration-accent/30 underline-offset-[3px] transition-colors hover:decoration-accent";
+const LINK = "text-ink underline decoration-ink/25 underline-offset-[3px] transition-colors hover:decoration-ink";
 
 /** Evidence URLs come from scraped pages and search results: only ever link or embed http(s), never javascript:/data:. */
 export function safeUrl(u: string | undefined): string | undefined {
@@ -254,7 +254,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
             </span>
           </div>
           {sample && (
-            <p className="mt-4 rounded-lg bg-accent/10 px-3 py-2 text-sm text-accent">Sample result with made-up data, to show how a verdict reads.</p>
+            <p className="mt-4 rounded-lg bg-sunk px-3 py-2 text-sm text-muted">Sample result with made-up data, to show how a verdict reads.</p>
           )}
 
           <p className="mt-6 text-sm text-muted">
