@@ -21,19 +21,16 @@ const chunk = (type, data) => {
 };
 
 // Unit-square coordinates (0..1). Returns [r,g,b,a]. Same mark as src/app/icon.svg (32-unit grid):
-// white receipt slip with a torn bottom edge and one ruled line, on a near-black tile.
+// a white cross-section with two eccentric growth rings, on a near-black tile.
 const INK = [11, 11, 12, 255], PAPER = [255, 255, 255, 255];
+const RINGS = [[14.8, 17.2, 8.6], [13.6, 18.2, 4.4]], HALF = 0.85;
 function pixel(x, y) {
   const r = 0.22, cx = Math.min(Math.max(x, r), 1 - r), cy = Math.min(Math.max(y, r), 1 - r);
   if ((x - cx) ** 2 + (y - cy) ** 2 > r * r) return [0, 0, 0, 0]; // rounded-square tile
-  // Slip on a 32-unit grid scaled to 80% of the tile, centred.
-  const u = (x - 0.1) / 0.8 * 32, v = (y - 0.1) / 0.8 * 32;
-  if (u < 7 || u > 25 || v < 3) return INK;
-  for (const ccx of [9.5, 22.5]) if (v < 5.5 && (ccx < 16 ? u < ccx : u > ccx) && Math.hypot(u - ccx, v - 5.5) > 2.5) return INK;
-  // torn bottom: 3 teeth between y 26.5 and 29
-  const f = ((u - 7) / 18) * 3, t = Math.abs((f - Math.floor(f)) * 2 - 1);
-  if (v > 26.5 + 2.5 * t) return INK;
-  if (Math.abs(v - 19.5) < 1.125 && u > 11.5 - 1.125 && u < 20.5 + 1.125) return INK; // ruled line
+  // Mark on a 32-unit grid scaled to 86% of the tile, centred.
+  const u = (x - 0.07) / 0.86 * 32, v = (y - 0.07) / 0.86 * 32;
+  if (Math.hypot(u - 16, v - 16) > 13) return INK;
+  for (const [rx, ry, rr] of RINGS) if (Math.abs(Math.hypot(u - rx, v - ry) - rr) < HALF) return INK;
   return PAPER;
 }
 

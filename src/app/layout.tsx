@@ -12,11 +12,11 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://receipts-hex8.vercel.app"),
-  title: "Receipts: check a site before you trust it",
+  title: "Patina: check a site before you trust it",
   description,
-  applicationName: "Receipts",
-  openGraph: { title: "Receipts", description, siteName: "Receipts", type: "website" },
-  twitter: { card: "summary_large_image", title: "Receipts", description },
+  applicationName: "Patina",
+  openGraph: { title: "Patina", description, siteName: "Patina", type: "website" },
+  twitter: { card: "summary_large_image", title: "Patina", description },
 };
 
 export const viewport: Viewport = {

@@ -88,6 +88,50 @@ summary::-webkit-details-marker {
   }
 }
 
+/* The one authored moment: the hero and the verdict word settle out of a soft blur. */
+.reveal {
+  animation: reveal 720ms var(--ease-out) both;
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(10px);
+  }
+}
+
+/* Confidence bar fills once the verdict lands. */
+.meter-fill {
+  transform-origin: left;
+  animation: meter 900ms var(--ease-out) 250ms both;
+}
+@keyframes meter {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* A finished stage confirms itself. */
+.pop {
+  animation: pop 320ms var(--ease-out) both;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* The mark turns while a check runs: eccentric rings read as work in progress. */
+.spin-slow {
+  animation: spin 2.4s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* The stage that is running right now. */
 .breathe {
   animation: breathe 1.6s ease-in-out infinite;
@@ -103,8 +147,14 @@ summary::-webkit-details-marker {
   .rise {
     animation: fade 200ms ease both;
   }
-  .breathe {
+  .breathe,
+  .spin-slow,
+  .meter-fill,
+  .pop {
     animation: none;
+  }
+  .reveal {
+    animation: fade 200ms ease both;
   }
   .press:active:not(:disabled) {
     transform: none;

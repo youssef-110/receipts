@@ -1,8 +1,8 @@
-# Receipts
+# Patina
 
-**Websites are free to fake. History isn't.**
+**Patina checks what a website can't fake. Websites are free to fake. History isn't.**
 
-Receipts is a research agent that doesn't believe the marketing. Paste a URL (a software vendor, an online shop from an ad, or a marketplace listing) and it returns a verdict: **Trust**, **Caution**, **Avoid** or **Unsure**. The agent collects evidence from sources a fake can't easily control (domain registration records, the Wayback Machine, certificate logs, company registers, what independent sites say about the company), lets an AI model on Nebius Token Factory weigh it, and shows every reason with a link to a page it actually fetched. No source, no claim.
+Patina is a research agent that doesn't believe the marketing. Paste a URL (a software vendor, an online shop from an ad, or a marketplace listing) and it returns a verdict: **Trust**, **Caution**, **Avoid** or **Unsure**. The agent collects evidence from sources a fake can't easily control (domain registration records, the Wayback Machine, certificate logs, company registers, what independent sites say about the company), lets an AI model on Nebius Token Factory weigh it, and shows every reason with a link to a page it actually fetched. No source, no claim.
 
 Built at the Agentic Hackathon: From Research to Commerce (AI Agents Berlin, 27 November 2026), Research Agents track.
 
@@ -10,7 +10,7 @@ Built at the Agentic Hackathon: From Research to Commerce (AI Agents Berlin, 27 
 
 The mode is picked automatically from the URL and page (or forced with `--mode`).
 
-| Mode | You paste | What Receipts checks |
+| Mode | You paste | What Patina checks |
 |---|---|---|
 | **Software vendor** | a vendor's website | domain age vs. when the brand first appears, certificate history, customers confirmed by third parties, company register entry, product still alive, breaches and risk news |
 | **Online shop / ad** | the shop behind an ad | imprint and returns page, payment methods, product listing age and price, scam watchlists and reviews, dropshipping and AI-generated photo check |
@@ -53,7 +53,7 @@ The web app calls `POST /api/check`, which streams progress events as NDJSON (se
 - **Nebius Token Factory:** every AI decision (decide, skeptic, judge) plus vision and extraction calls. [docs/nebius-note.md](docs/nebius-note.md)
 - **Tavily:** search and page extraction for third-party mentions, registers, risk news, shop watchlists and marketplace price checks.
 - **Norma (Quality Clouds):** one policy, enforced while we built: all outbound HTTP goes through one polite, SSRF-guarded fetcher. [docs/norma-note.md](docs/norma-note.md)
-- **n8n:** a weekly vendor watch that re-runs Receipts for each vendor you depend on and alerts Discord when a verdict changes. [n8n/README.md](n8n/README.md)
+- **n8n:** a weekly vendor watch that re-runs Patina for each vendor you depend on and alerts Discord when a verdict changes. [n8n/README.md](n8n/README.md)
 
 ## Project structure
 

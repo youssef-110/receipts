@@ -1,6 +1,6 @@
-﻿# Receipts â€” check this page (browser extension)
+﻿# Patina â€” check this page (browser extension)
 
-Chrome/Edge (Manifest V3) extension. Sends the current page or a right-clicked link to the Receipts web app, which returns Trust / Caution / Avoid / Unsure with every reason linked to proof.
+Chrome/Edge (Manifest V3) extension. Sends the current page or a right-clicked link to the Patina web app, which returns Trust / Caution / Avoid / Unsure with every reason linked to proof.
 
 No build step, no dependencies, no host permissions, no content scripts, no remote code. Permissions: `activeTab`, `contextMenus`, `storage`.
 
@@ -14,8 +14,8 @@ No build step, no dependencies, no host permissions, no content scripts, no remo
 ## Use it
 
 - **Popup**: click the toolbar icon, pick a page type (Auto / Software vendor / Online shop / Marketplace listing), click **Check this page**. Opens `<appUrl>/?url=<page>&mode=<mode>` in a new tab. Disabled on `chrome://`, `edge://`, `file://` and other non-http(s) pages.
-- **Right-click a link** (e.g. an ad on social media) -> **Check this link with Receipts**.
-- **Right-click a page** -> **Check this page with Receipts**. (Context-menu checks use mode `auto`.)
+- **Right-click a link** (e.g. an ad on social media) -> **Check this link with Patina**.
+- **Right-click a page** -> **Check this page with Patina**. (Context-menu checks use mode `auto`.)
 
 ## Set the app URL
 

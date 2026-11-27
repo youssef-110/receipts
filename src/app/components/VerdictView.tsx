@@ -267,7 +267,8 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p
-                className={`font-serif text-[3.5rem] font-medium leading-[0.9] tracking-[-0.03em] sm:text-[4.5rem] ${style.text}`}
+                style={{ animationDelay: "120ms" }}
+                className={`reveal font-serif text-[3.5rem] font-medium leading-[0.9] tracking-[-0.03em] sm:text-[4.5rem] ${style.text}`}
                 aria-label={`Verdict: ${v.verdict}`}
               >
                 {v.verdict}
@@ -287,7 +288,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
                 aria-valuenow={pct}
                 aria-label="Confidence"
               >
-                <div className={`h-full rounded-full ${style.bg}`} style={{ width: `${pct}%` }} />
+                <div className={`meter-fill h-full rounded-full ${style.bg}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           </div>
@@ -345,7 +346,7 @@ export function VerdictView({ v, sample, onRecheck }: { v: Verdict; sample?: boo
           )}
 
           <p className="mt-7 border-t border-dashed border-line pt-4 text-center font-mono text-xs text-muted">
-            {v.evidence.length} receipts · {v.evidence.filter((e) => e.verified).length} fetched this run
+            {v.evidence.length} sources · {v.evidence.filter((e) => e.verified).length} fetched this run
           </p>
         </article>
 

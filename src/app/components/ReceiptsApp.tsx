@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Mode, ProgressEvent, Verdict } from "../../lib/types";
 import { sampleVerdict } from "../fixtures/sample-verdict";
-import { LogoMark, Wordmark } from "./Logo";
+import { BRAND, LogoMark, Wordmark } from "./Logo";
 import { emptyProgress, ProgressPanel, reduceProgress, type ProgressState } from "./ProgressPanel";
 import { VerdictView } from "./VerdictView";
 
@@ -159,7 +159,7 @@ export function ReceiptsApp() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6">
       <header className="flex h-16 items-center justify-between">
-        <a href="/" className="rounded-md" aria-label="Receipts home">
+        <a href="/" className="rounded-md" aria-label={`${BRAND} home`}>
           <Wordmark />
         </a>
         <a href="?demo=1" className="press rounded-md px-1 text-sm text-muted hover:text-ink">
@@ -170,19 +170,23 @@ export function ReceiptsApp() {
       <section className="pb-12 pt-12 sm:pb-16 sm:pt-24" aria-labelledby="hero-heading">
         <h1
           id="hero-heading"
-          className="max-w-[15ch] text-balance font-serif text-[2.6rem] font-normal leading-[1.04] tracking-[-0.025em] sm:text-[3.75rem]"
+          className="text-balance font-serif text-[2.6rem] font-normal leading-[1.04] tracking-[-0.03em] sm:text-[3.6rem]"
         >
-          Websites are free to fake. <span className="text-muted">History isn&apos;t.</span>
+          <span className="reveal block">Websites are free to fake.</span>
+          <span className="reveal block text-muted" style={{ animationDelay: "90ms" }}>
+            History isn&apos;t.
+          </span>
         </h1>
-        <p className="mt-5 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted">
-          Paste a software vendor, a shop you saw in an ad, or a marketplace listing. Receipts checks what a site can&apos;t
+        <p className="reveal mt-6 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted" style={{ animationDelay: "180ms" }}>
+          Paste a software vendor, a shop you saw in an ad, or a marketplace listing. {BRAND} checks what a site can&apos;t
           fake (domain age, archive history, company registers, outside reviews) and returns a verdict where every reason
           links to its proof.
         </p>
 
         <form
           onSubmit={onSubmit}
-          className="mt-9 rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-16px_rgb(0_0_0/0.16)] transition-[border-color,box-shadow] duration-200 focus-within:border-ink/60 focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--ink)_8%,transparent)]"
+          style={{ animationDelay: "260ms" }}
+          className="reveal mt-9 rounded-2xl border border-line bg-paper shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-16px_rgb(0_0_0/0.16)] transition-[border-color,box-shadow] duration-200 focus-within:border-ink/60 focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--ink)_8%,transparent)]"
         >
           <label htmlFor="url" className="sr-only">
             Website or listing URL
@@ -232,7 +236,7 @@ export function ReceiptsApp() {
           </div>
         </form>
 
-        <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+        <div className="reveal mt-5 flex flex-wrap items-center gap-2 text-sm" style={{ animationDelay: "340ms" }}>
           <span className="mr-1 text-muted">Try</span>
           {EXAMPLES.map((ex) => (
             <button
@@ -347,7 +351,7 @@ function Footer() {
             aria-describedby="bm-hint"
           >
             <LogoMark className="size-4 text-ink" />
-            Check with Receipts
+            Check with {BRAND}
           </a>
           <p id="bm-hint" className="mt-2 text-xs text-muted">
             Drag it to your bookmarks bar, then click it on any shop or vendor page.
