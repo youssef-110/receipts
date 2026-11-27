@@ -29,7 +29,7 @@ The mode is picked automatically from the URL and page (or forced with `--mode`)
 4. **Citation validator.** Any reason that cites no evidence, an unknown id, or a source we did not fetch or see this run is dropped and listed under "dropped reasons".
 5. **Guards.** Trust is downgraded to Caution unless at least two cited supporting time/third-party items from at least two collectors back it, a strong red flag is present, or the cited support is only self-reported. If no reason survives, the verdict becomes Unsure. Page text is treated as untrusted data and never reaches the model as instructions.
 
-The result is a verdict, a confidence, reasons with source links, conflicts, "check next" steps, the skeptic's view, and a trace of every model call.
+In the end you get a verdict and a confidence level, along with the reasons and their source links, any conflicts, suggested "check next" steps, the skeptic's view and a trace of each model call.
 
 ## Run it
 
