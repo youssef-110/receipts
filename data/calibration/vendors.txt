@@ -1,0 +1,46 @@
+# Internal calibration set for vendor mode. NOT public: expected labels are our own buyer calls, not accusations.
+# Format: a "# expected: <label> — why" line above each URL. Acceptable alternates in [brackets] count as "lenient" hits.
+#
+# --- big established SaaS ---
+# expected: Trust — public company, decades of history, ships constantly, broad independent coverage
+https://www.atlassian.com
+# expected: Trust — large established SaaS (Salesforce-owned), huge third-party footprint
+https://slack.com
+# expected: Trust — listed company, long Wayback history, many independent case studies
+https://www.hubspot.com
+#
+# --- small / niche but real B2B (incl. German Mittelstand, dated-looking sites) ---
+# expected: Trust — German accounting SaaS since ~2013, registered company, real customers
+https://sevdesk.de
+# expected: Trust — German cooperative software house since 1966, conservative site, enormous customer base
+https://www.datev.de
+# expected: Trust — German desktop/finance software vendor since the 1980s (WISO), dated but live
+https://www.buhl.de
+# expected: Trust — small German reporting-component vendor since 1989, dated site, product ships regularly
+https://www.combit.net
+# expected: Trust — Nuremberg monitoring vendor (PRTG) since ~1997, niche but long-lived
+https://www.paessler.com
+# expected: Trust [Caution] — small EU open-source analytics SaaS since ~2019, real but small footprint
+https://plausible.io
+#
+# --- dead / shut-down product (company gone) ---
+# expected: Avoid [Caution] — checkout start-up that shut down in 2022; product dead, nobody to hold accountable for data or money
+https://www.fast.co
+#
+# --- real product with notable past breach ---
+# expected: Caution [Trust] — long-running password manager with a serious 2022 vault breach; must surface it
+https://www.lastpass.com
+# expected: Caution [Trust] — established IT-monitoring vendor; 2020 supply-chain compromise must be surfaced
+https://www.solarwinds.com
+#
+# --- very new / hollow-looking SaaS (generated landing pages, no third-party footprint) ---
+# expected: Avoid [Unsure] — lovable.app page showing big-name customer logos, no history, no independent trace
+https://emmaxcom.lovable.app
+# expected: Avoid [Unsure] — lovable.app "project delivery" page with Stripe/Notion/Linear logos, no footprint
+https://treadcloud.lovable.app
+# expected: Avoid [Unsure] — lovable.app CRM claiming 50,000+ customers, no footprint
+https://lovacrm.lovable.app
+# expected: Avoid [Unsure] — vercel.app template-like SaaS page naming real brands as customers
+https://01-modern-saas.vercel.app
+# expected: Avoid — our own fictional demo vendor: polished vercel.app page, "1,800+ teams", SOC 2 claims, invented customers, no imprint, live <1 day
+https://kontorflow-demo.vercel.app
