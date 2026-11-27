@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
-import { StaticMark } from "./components/Logo";
+import { BRAND, StaticMark } from "./components/Logo";
 
-export const alt = "Receipts: websites are free to fake. History isn't.";
+export const alt = "Patina: websites are free to fake. History isn't.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -22,7 +22,7 @@ export default function OpengraphImage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <StaticMark size={56} fill="#0b0b0c" cut="#ffffff" />
-          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.03em" }}>Receipts</div>
+          <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.03em" }}>{BRAND}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 84, lineHeight: 1.04, letterSpacing: "-0.035em", fontWeight: 600 }}>Websites are free to fake.</div>

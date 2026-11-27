@@ -1,6 +1,6 @@
-# Receipts: 90-second pitch
+# Patina: 90-second pitch
 
-**0:00 Hook.** "Anyone can generate a convincing website. Marketing is free now. Receipts aren't."
+**0:00 Hook.** "Anyone can generate a convincing website. Marketing is free now. History isn't."
 
 **0:10 What it is.** Paste a URL, get Trust / Caution / Avoid / Unsure. Every reason links to a page we actually fetched. No source, no claim.
 

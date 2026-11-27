@@ -1,8 +1,8 @@
 importScripts("common.js");
 
 const MENUS = [
-  { id: "receipts-link", title: "Check this link with Receipts", contexts: ["link"] },
-  { id: "receipts-page", title: "Check this page with Receipts", contexts: ["page"] },
+  { id: "receipts-link", title: "Check this link with Patina", contexts: ["link"] },
+  { id: "receipts-page", title: "Check this page with Patina", contexts: ["page"] },
 ];
 
 chrome.runtime.onInstalled.addListener(() => {

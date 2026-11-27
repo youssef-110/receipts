@@ -1,6 +1,6 @@
 # n8n: weekly vendor watch
 
-Reruns Receipts every Monday for each vendor your company depends on and posts to Discord when a verdict changes (for example, new breach news turns Trust into Caution).
+Reruns Patina every Monday for each vendor your company depends on and posts to Discord when a verdict changes (for example, new breach news turns Trust into Caution).
 
 ## Set up (5 minutes)
 1. In n8n Cloud: **Workflows → Import from file** → `vendor-watch.json`.

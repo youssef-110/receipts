@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ProgressEvent } from "../../lib/types";
+import { LogoMark } from "./Logo";
 
 export type Stage = Extract<ProgressEvent, { type: "stage" }>["stage"];
 
@@ -31,7 +32,7 @@ const STAGES: { id: Stage; label: string; skipped: string }[] = [
   { id: "decide", label: "Weigh the evidence", skipped: "Skipped" },
   { id: "skeptic", label: "Argue the other side", skipped: "Skipped: the first AI step did not finish" },
   { id: "judge", label: "Make the final call", skipped: "Not needed: the skeptic did not make a strong case against the draft" },
-  { id: "validate", label: "Check every reason has a receipt", skipped: "Skipped" },
+  { id: "validate", label: "Check every reason has a source", skipped: "Skipped" },
   { id: "done", label: "Done", skipped: "Skipped" },
 ];
 
@@ -88,18 +89,19 @@ export function ProgressPanel({ p, running }: { p: ProgressState; running: boole
   return (
     <section className="rise rounded-2xl border border-line bg-paper p-5 sm:p-7" aria-labelledby="progress-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="progress-heading" className="font-semibold">
+        <h2 id="progress-heading" className="flex items-center gap-2.5 font-semibold">
+          <LogoMark className={`size-4 text-ink ${running ? "spin-slow" : ""}`} />
           {running ? "Checking" : "Check finished"}
           <span className="ml-2.5 font-mono text-sm font-normal tabular-nums text-muted" aria-label={`${Math.floor(elapsed)} seconds`}>
             {elapsed.toFixed(1)}s
           </span>
         </h2>
         <span className="font-mono text-xs tabular-nums text-muted">
-          {total} receipts{p.llmCalls > 0 ? ` · ${p.llmCalls} model calls` : ""}
+          {total} sources{p.llmCalls > 0 ? ` · ${p.llmCalls} model calls` : ""}
         </span>
       </div>
       <p className="sr-only" aria-live="polite">
-        {lastLabel}. {total} receipts so far.
+        {lastLabel}. {total} sources so far.
       </p>
       <ol className="mt-5">
         {STAGES.map((st, i) => {
@@ -109,7 +111,7 @@ export function ProgressPanel({ p, running }: { p: ProgressState; running: boole
               {i < STAGES.length - 1 && <span className="absolute left-[9.5px] top-6 bottom-1 w-px bg-line" aria-hidden />}
               <span className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center" aria-hidden>
                 {state === "done" && (
-                  <span className="flex size-5 items-center justify-center rounded-full bg-sunk">
+                  <span className="pop flex size-5 items-center justify-center rounded-full bg-sunk">
                     <svg viewBox="0 0 16 16" className="size-3 text-ink">
                       <path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
