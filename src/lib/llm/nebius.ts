@@ -16,6 +16,17 @@ export interface ChatOpts {
   images?: string[]; // image URLs or data: URIs (vision models only)
   maxTokens?: number;
   fresh?: boolean; // skip the LLM response cache
+  timeoutMs?: number; // per attempt; default config.llmTimeoutMs[role]
+}
+
+/** Thrown by chat() when every attempt failed; `call` is the failed attempt's trace record. */
+export class ChatError extends Error {
+  constructor(
+    message: string,
+    readonly call: LlmCall,
+  ) {
+    super(message);
+  }
 }
 
 export interface ChatResult {
@@ -81,13 +92,13 @@ async function cachePut(key: string, value: { raw: string; id?: string; usage?: 
   }
 }
 
-async function post(model: string, messages: Message[], json: boolean, maxTokens: number): Promise<Completion> {
+async function post(model: string, messages: Message[], json: boolean, maxTokens: number, timeoutMs: number): Promise<Completion> {
   let res;
   try {
     res = await politeFetch(`${config.nebius.baseUrl}chat/completions`, {
       method: "POST",
       cacheTtlS: 0,
-      timeoutMs: 90000,
+      timeoutMs,
       maxBytes: 4_000_000,
       headers: { authorization: `Bearer ${config.nebius.apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({
@@ -121,56 +132,14 @@ export async function chat(opts: ChatOpts): Promise<ChatResult> {
   ];
 
   const started = Date.now();
+  const timeoutMs = opts.timeoutMs ?? config.llmTimeoutMs[opts.role];
   let model = opts.model;
   const key = cacheKey(model, messages, json);
   let cached = false;
   let usage: Completion["usage"];
   let id: string | undefined;
-  let raw: string;
-
-  const hit = opts.fresh ? undefined : await cacheGet(key);
-  if (hit) {
-    ({ raw, id, usage } = hit);
-    cached = true;
-  } else {
-    let completion: Completion;
-    try {
-      completion = await post(model, messages, json, maxTokens);
-    } catch (err) {
-      const fb = FALLBACK[model];
-      if (!(err instanceof RetryableError) || !fb) throw err;
-      model = fb;
-      completion = await post(model, messages, json, maxTokens);
-    }
-    raw = completion.choices?.[0]?.message?.content ?? "";
-    id = completion.id;
-    usage = completion.usage;
-  }
-
-  let parsed: unknown = null;
-  if (json) {
-    try {
-      parsed = parseJsonLoose(raw);
-    } catch {
-      // One repair attempt: show the model its own output and ask for clean JSON.
-      const repair = await post(
-        model,
-        [
-          ...messages,
-          { role: "assistant", content: raw.slice(0, 6000) },
-          { role: "user", content: "That was not valid JSON. Reply again with ONLY the single JSON object, no prose." },
-        ],
-        true,
-        maxTokens,
-      );
-      raw = repair.choices?.[0]?.message?.content ?? "";
-      parsed = parseJsonLoose(raw); // throws if still broken
-      cached = false;
-    }
-  }
-  if (!cached) await cachePut(key, { raw, id, usage });
-
-  const call: LlmCall = {
+  let raw = "";
+  const record = (): LlmCall => ({
     role: opts.role,
     model,
     started_at: new Date(started).toISOString(),
@@ -179,6 +148,54 @@ export async function chat(opts: ChatOpts): Promise<ChatResult> {
     completion_tokens: usage?.completion_tokens,
     request_id: id,
     cached,
-  };
-  return { json: parsed, raw, call };
+  });
+
+  let parsed: unknown = null;
+  try {
+    const hit = opts.fresh ? undefined : await cacheGet(key);
+    if (hit) {
+      ({ raw, id, usage } = hit);
+      cached = true;
+    } else {
+      let completion: Completion;
+      try {
+        completion = await post(model, messages, json, maxTokens, timeoutMs);
+      } catch (err) {
+        // A timeout surfaces as RetryableError, so a slow model falls back instead of hanging the run.
+        const fb = FALLBACK[model];
+        if (!(err instanceof RetryableError) || !fb) throw err;
+        model = fb;
+        completion = await post(model, messages, json, maxTokens, timeoutMs);
+      }
+      raw = completion.choices?.[0]?.message?.content ?? "";
+      id = completion.id;
+      usage = completion.usage;
+    }
+
+    if (json) {
+      try {
+        parsed = parseJsonLoose(raw);
+      } catch {
+        // One repair attempt: show the model its own output and ask for clean JSON.
+        const repair = await post(
+          model,
+          [
+            ...messages,
+            { role: "assistant", content: raw.slice(0, 6000) },
+            { role: "user", content: "That was not valid JSON. Reply again with ONLY the single JSON object, no prose." },
+          ],
+          true,
+          maxTokens,
+          timeoutMs,
+        );
+        raw = repair.choices?.[0]?.message?.content ?? "";
+        parsed = parseJsonLoose(raw); // throws if still broken
+        cached = false;
+      }
+    }
+  } catch (err) {
+    throw new ChatError(err instanceof Error ? err.message : String(err), record());
+  }
+  if (!cached) await cachePut(key, { raw, id, usage });
+  return { json: parsed, raw, call: record() };
 }

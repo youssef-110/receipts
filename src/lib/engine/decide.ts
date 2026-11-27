@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { config } from "../config";
-import { chat } from "../llm/nebius";
+import { ChatError, chat as chatRaw, type ChatOpts } from "../llm/nebius";
 import { DECIDE_FORMAT, JUDGE_PROMPT, SKEPTIC_PROMPT, systemPrompt } from "../llm/prompts/common";
 import type { Conflict, Evidence, LlmCall, Reason, RunCtx, SkepticView, VerdictLabel } from "../types";
 import type { Prior } from "./rubric";
@@ -83,7 +83,7 @@ function numericData(data: NonNullable<Evidence["data"]>): Record<string, number
   return out;
 }
 
-function caseFile(ctx: RunCtx, evidence: Evidence[], prior: Prior, conflicts: Conflict[]): string {
+export function caseFile(ctx: RunCtx, evidence: Evidence[], prior: Prior, conflicts: Conflict[]): string {
   const s = ctx.site;
   const notes: string[] = [];
   if (!s.status) notes.push("The site itself could not be fetched (status 0).");
@@ -121,7 +121,20 @@ export async function decide(
     llm.push(call);
     ctx.emit({ type: "llm", call });
   };
+  // Record failed attempts too, so the trace shows what timed out or broke.
+  const chat = async (opts: ChatOpts) => {
+    try {
+      const r = await chatRaw(opts);
+      record(r.call);
+      return r;
+    } catch (err) {
+      if (err instanceof ChatError) record(err.call);
+      throw err;
+    }
+  };
   const file = caseFile(ctx, evidence, prior, conflicts);
+  // Optional steps get what is left of the run budget (min 3s) so a slow model cannot push the run past it.
+  const within = (ms: number) => Math.max(3000, Math.min(ms, ctx.deadline - Date.now()));
 
   // 1. DECIDE
   const d = await chat({
@@ -133,7 +146,6 @@ export async function decide(
     maxTokens: 4000,
     fresh: opts.fresh,
   });
-  record(d.call);
   let draft: Draft = parseAs(DecideSchema, d.json, d.raw, "verdict");
 
   // 2. SKEPTIC (different model family). Failure here is not fatal.
@@ -148,8 +160,8 @@ export async function decide(
       json: true,
       maxTokens: 3000,
       fresh: opts.fresh,
+      timeoutMs: within(config.llmTimeoutMs.skeptic),
     });
-    record(s.call);
     skeptic = parseAs(SkepticSchema, s.json, s.raw, "argued_for");
   } catch (err) {
     ctx.emit({ type: "error", error: `Skeptic step failed: ${err instanceof Error ? err.message : String(err)}` });
@@ -167,8 +179,8 @@ export async function decide(
         json: true,
         maxTokens: 4000,
         fresh: opts.fresh,
+        timeoutMs: within(config.llmTimeoutMs.judge),
       });
-      record(j.call);
       draft = parseAs(DecideSchema, j.json, j.raw, "verdict");
     } catch (err) {
       ctx.emit({ type: "error", error: `Judge step failed, keeping draft: ${err instanceof Error ? err.message : String(err)}` });
