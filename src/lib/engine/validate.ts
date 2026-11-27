@@ -42,12 +42,17 @@ export function validate(draft: DecideResult, evidence: Evidence[], _prior: Prio
   const check_next = [...draft.check_next];
 
   if (verdict === "Trust") {
-    const hard = evidence.filter((e) => e.polarity === "supports" && (e.tier === "time" || e.tier === "third_party"));
+    // Count only evidence the surviving for_trust reasons actually cite, so text injected into page
+    // content can't talk the model into Trust without real time/third-party support behind it.
+    const citedIds = new Set(reasons.filter((r) => r.stance === "for_trust").flatMap((r) => r.evidence_ids));
+    const hard = evidence.filter(
+      (e) => citedIds.has(e.id) && e.polarity === "supports" && (e.tier === "time" || e.tier === "third_party"),
+    );
     const collectors = new Set(hard.map((e) => e.collector));
     if (hard.length < 2 || collectors.size < 2) {
       verdict = "Caution";
       guards.push(
-        `Trust needs >=2 supporting time/third-party items from >=2 collectors (found ${hard.length} from ${collectors.size}): downgraded to Caution`,
+        `Trust needs >=2 cited supporting time/third-party items from >=2 collectors (found ${hard.length} from ${collectors.size}): downgraded to Caution`,
       );
     }
   }

@@ -72,8 +72,15 @@ function compactEvidence(evidence: Evidence[]) {
     verified: e.verified,
     claim: e.claim,
     source: e.source,
-    ...(e.data ? { data: e.data } : {}),
+    // Numbers and booleans only: free-text data (e.g. customer names scraped from logo alt text) is page-controlled.
+    ...(e.data ? { data: numericData(e.data) } : {}),
   }));
+}
+
+function numericData(data: NonNullable<Evidence["data"]>): Record<string, number | boolean> {
+  const out: Record<string, number | boolean> = {};
+  for (const [k, v] of Object.entries(data)) if (typeof v === "number" || typeof v === "boolean") out[k] = v;
+  return out;
 }
 
 function caseFile(ctx: RunCtx, evidence: Evidence[], prior: Prior, conflicts: Conflict[]): string {
