@@ -112,7 +112,9 @@ export function validate(draft: DecideResult, evidence: Evidence[], _prior: Prio
     guards.push(`Incident ${e.id} was not discussed by the model: added as an against-trust reason`);
   }
   const hollow = hollowProfile(evidence);
+  let hollowApplied = false;
   if (hollow && verdict !== "Avoid" && !hollow.some((id) => problem(id))) {
+    hollowApplied = true;
     // Looked and found nothing (not missing data): a self-made presence with no footprint is not one to hand data or money to.
     if (!reasons.some((r) => r.stance === "against_trust" && r.evidence_ids.includes(hollow[0]))) {
       reasons.push({
@@ -130,7 +132,7 @@ export function validate(draft: DecideResult, evidence: Evidence[], _prior: Prio
     verdict = "Unsure";
   }
   if (!reasons.length && !check_next.length) check_next.push("Check the vendor manually: no cited evidence was available");
-  if (verdict !== draft.verdict && !hollow) confidence = Math.min(confidence, verdict === "Unsure" ? 0.3 : 0.6);
+  if (verdict !== draft.verdict && !hollowApplied) confidence = Math.min(confidence, verdict === "Unsure" ? 0.3 : 0.6);
 
   return {
     draft: { ...draft, verdict, confidence, reasons, conflicts, skeptic, check_next },
