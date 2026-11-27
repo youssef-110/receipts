@@ -2,6 +2,10 @@
 
 **Patina checks what a website can't fake. Websites are free to fake. History isn't.**
 
+[![Patina launch video (1:16): click to play](docs/patina-launch-poster.jpg)](docs/patina-launch.mp4)
+
+**[Watch the launch video (1:16)](docs/patina-launch.mp4)**
+
 Patina is a research agent that doesn't believe the marketing. Paste a URL (a software vendor, an online shop from an ad, or a marketplace listing) and it returns a verdict: **Trust**, **Caution**, **Avoid** or **Unsure**. The agent collects evidence from sources a fake can't easily control (domain registration records, the Wayback Machine, certificate logs, company registers, what independent sites say about the company), lets an AI model on Nebius Token Factory weigh it, and shows every reason with a link to a page it actually fetched. No source, no claim.
 
 Built at the Agentic Hackathon: From Research to Commerce (AI Agents Berlin, 27 November 2026), Research Agents track.
